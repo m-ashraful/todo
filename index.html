@@ -1,0 +1,2242 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Daily Todo</title>
+<meta name="theme-color" content="#312E81">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icon-512.png">
+<link rel="apple-touch-icon" href="icon-512.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Daily Todo">
+<script>
+/* =========================================================
+ *  সার্ভারের সাথে যোগাযোগ — GitHub Pages সংস্করণ
+ *  API_URL = Apps Script-এর "Anyone" deployment-এর /exec লিংক।
+ *  এই পেজ public, তাই এখানে কোনো গোপন তথ্য নেই — নিরাপত্তা আসে
+ *  লগইন টোকেন থেকে, যেটা সার্ভার প্রতিটা কলে যাচাই করে (WebApi ফাইল)।
+ * ========================================================= */
+var API_URL = 'https://script.google.com/macros/s/AKfycbzfURT7GIES1X5-vRcDwhBanLsytp7_N-olyF1ivANYIk95r4ocSrVQwIMGGK3jpxoUrg/exec';
+
+/* লগইন টোকেন — ইমেইল-কোড দিয়ে একবার ঢুকলে এই ব্রাউজারে থাকে।
+ * storage বন্ধ থাকলে অন্তত এই সেশনে মেমরিতে থাকে। */
+var AUTH_KEY = 'todo_auth';
+var AUTH = '';
+try { AUTH = localStorage.getItem(AUTH_KEY) || ''; } catch (e) {}
+function setAuth(t) {
+  AUTH = t || '';
+  try { if (AUTH) localStorage.setItem(AUTH_KEY, AUTH); else localStorage.removeItem(AUTH_KEY); } catch (e) {}
+}
+
+/* text/plain POST — এতে ব্রাউজার আলাদা preflight পাঠায় না, Apps Script-এ সরাসরি যায় */
+function callServer(fn, args) {
+  return fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ fn: fn, args: args || [], auth: AUTH })
+  }).then(function (r) {
+    if (!r.ok) throw new Error('সার্ভার সাড়া দিচ্ছে না (' + r.status + ') — একটু পরে আবার চেষ্টা করুন।');
+    return r.json().catch(function () { throw new Error('সার্ভারের উত্তর বোঝা যায়নি — deployment ঠিক আছে কি না দেখুন।'); });
+  }, function () {
+    throw new Error('সার্ভারে পৌঁছানো যায়নি — ইন্টারনেট সংযোগ দেখুন।');
+  }).then(function (j) {
+    if (!j || !j.ok) throw new Error((j && j.error) || 'অজানা সমস্যা।');
+    return j.data;
+  });
+}
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  /* ============ টোকেন ============ */
+  :root {
+    --bg: #F3F4F9; --surface: #FFFFFF; --surface-2: #F1F3F9; --surface-3: #E6E9F2;
+    --ink: #141831; --ink-2: #565D7E; --ink-3: #979DB7; --line: #E3E6EF;
+    --brand: #4F46E5; --ok: #059669; --warn: #D97706; --danger: #E11D48;
+    --hero-1: #1E1B4B; --hero-2: #4338CA; --hero-3: #7C3AED;
+    --shadow: 0 1px 2px rgba(20,24,49,.05), 0 4px 14px -6px rgba(20,24,49,.12);
+    --shadow-lg: 0 20px 44px -12px rgba(20,24,49,.4);
+    --r: 14px;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0D0F1E; --surface: #161931; --surface-2: #1D2140; --surface-3: #2A2F55;
+      --ink: #ECEEFA; --ink-2: #A8AECB; --ink-3: #6E7497; --line: #272C4B;
+      --brand: #818CF8;
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 6px 18px -8px rgba(0,0,0,.6);
+      color-scheme: dark;
+    }
+  }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg); color: var(--ink);
+    font: 14px/1.45 'Inter', 'Hind Siliguri', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    padding-bottom: calc(86px + env(safe-area-inset-bottom));
+  }
+  body.lock { overflow: hidden; }
+  button, input, textarea, select { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  .ic { flex: none; display: block; }
+  #app { max-width: 560px; margin: 0 auto; }
+
+  /* ============ হেডার ============ */
+  .hero {
+    color: #fff; padding: 14px 16px 16px; border-radius: 0 0 24px 24px;
+    background:
+      radial-gradient(120% 130% at 100% 0%, rgba(124,58,237,.95) 0%, transparent 55%),
+      radial-gradient(80% 90% at 0% 100%, rgba(14,165,233,.35) 0%, transparent 60%),
+      linear-gradient(135deg, var(--hero-1), var(--hero-2));
+    box-shadow: 0 10px 30px -14px rgba(49,46,129,.7);
+  }
+  .hero-top { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+  .eyebrow { font-size: 10px; font-weight: 700; letter-spacing: .18em; opacity: .7; }
+  .hero h1 { margin: 2px 0 0; font-size: 21px; font-weight: 800; letter-spacing: -.01em; line-height: 1.15; }
+  /* প্রতিষ্ঠানের logo + নাম + অ্যাপের নাম — সব পাতার উপরে */
+  .brand { display: flex; align-items: center; gap: 11px; min-width: 0; }
+  .brand-logo {
+    width: 46px; height: 46px; border-radius: 50%; object-fit: contain; flex: none; background: #fff; padding: 2px;
+    box-shadow: 0 0 0 2px rgba(255,255,255,.35), 0 6px 14px rgba(15,10,60,.35);
+  }
+  .brand-txt { min-width: 0; }
+  .brand-txt b { display: block; font-size: 17px; font-weight: 800; line-height: 1.2; letter-spacing: .01em;
+                 white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .brand-sub { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; margin-top: 4px; }
+  .brand-sub .app { font-size: 10.5px; font-weight: 700; letter-spacing: .2em; opacity: .78; }
+  /* কার To-Do — সোনালি pill */
+  .owner {
+    display: inline-flex; align-items: center; gap: 5px; padding: 2px 10px 2px 3px; border-radius: 999px;
+    background: linear-gradient(135deg, #FDE68A, #F59E0B); color: #3B2304;
+    font-size: 11.5px; font-weight: 800; letter-spacing: .01em; white-space: nowrap;
+    box-shadow: 0 3px 10px -3px rgba(245,158,11,.7), inset 0 0 0 1px rgba(255,255,255,.45);
+  }
+  .owner i {
+    width: 17px; height: 17px; border-radius: 50%; display: grid; place-items: center; font-style: normal;
+    background: rgba(59,35,4,.85); color: #FDE68A;
+  }
+  .hbtn {
+    width: 36px; height: 36px; border-radius: 11px; border: 0; color: #fff;
+    background: rgba(255,255,255,.14); display: grid; place-items: center; transition: transform .12s;
+  }
+  .hbtn:active { transform: scale(.92); }
+  .hbtn.spin .ic { animation: spin .9s linear infinite; }
+  .hero-date { margin-top: 12px; font-size: 13px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; opacity: .95; }
+  .pill-rel { background: rgba(255,255,255,.2); padding: 2px 10px; border-radius: 999px; font-weight: 700; font-size: 12px; }
+  .hero-stats { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
+  .ringwrap { position: relative; width: 60px; height: 60px; flex: none; }
+  .ringwrap b { position: absolute; inset: 0; display: grid; place-items: center; font-weight: 800; font-size: 14px; }
+  .ring circle { transition: stroke-dashoffset .5s ease; }
+  .hs { display: flex; gap: 6px; flex: 1; }
+  .hs div { flex: 1; background: rgba(255,255,255,.11); border-radius: 12px; padding: 7px 6px; text-align: center; }
+  .hs b { display: block; font-size: 18px; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1.15; }
+  .hs span { font-size: 10.5px; opacity: .8; }
+  .hero-sub { margin-top: 12px; display: flex; flex-direction: column; }
+  .hero-sub b { font-size: 17px; font-weight: 800; }
+  .hero-sub span { font-size: 12.5px; opacity: .8; }
+  .modes { display: flex; gap: 4px; margin-top: 14px; background: rgba(255,255,255,.1); padding: 4px; border-radius: 13px; }
+  .modes button {
+    flex: 1; border: 0; background: none; color: rgba(255,255,255,.82); padding: 7px 2px;
+    border-radius: 10px; font-weight: 600; font-size: 12.5px; transition: background .15s, color .15s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .modes button.on { background: #fff; color: var(--hero-2); }
+  .badge {
+    display: inline-grid; place-items: center; min-width: 17px; height: 17px; padding: 0 4px;
+    border-radius: 9px; background: #F43F5E; color: #fff; font-size: 10px; font-weight: 700; margin-left: 5px;
+  }
+
+  main { padding: 12px 14px 0; }
+
+  /* ============ তারিখের স্ট্রিপ ============ */
+  .strip {
+    display: flex; align-items: center; gap: 6px; background: var(--surface);
+    border-radius: var(--r); padding: 6px; box-shadow: var(--shadow); margin-bottom: 10px;
+  }
+  .days { flex: 1; display: flex; gap: 3px; overflow-x: auto; scroll-behavior: smooth; scrollbar-width: none; }
+  .days::-webkit-scrollbar { display: none; }
+  .day {
+    flex: 0 0 44px; border: 0; background: none; border-radius: 12px; padding: 6px 0 5px;
+    display: flex; flex-direction: column; align-items: center; gap: 1px; color: var(--ink-2);
+    transition: background .15s;
+  }
+  .day .dw { font-size: 10.5px; font-weight: 600; }
+  .day .dn { font-size: 16px; font-weight: 700; color: var(--ink); }
+  .day .bar { width: 18px; height: 3px; border-radius: 2px; background: var(--surface-3); overflow: hidden; margin-top: 3px; }
+  .day .bar i { display: block; height: 100%; background: var(--ok); }
+  .day .bar.none { background: transparent; }
+  .day.off { opacity: .6; }
+  .day.off .dw { color: var(--danger); }
+  .day.today .dn { color: var(--brand); }
+  .day.on { background: linear-gradient(160deg, var(--hero-2), var(--hero-3)); opacity: 1; }
+  .day.on .dn, .day.on .dw { color: #fff; }
+  .day.on .bar { background: rgba(255,255,255,.3); }
+  .day.on .bar i { background: #fff; }
+  .sbtn {
+    flex: none; width: 32px; height: 32px; border-radius: 10px; border: 0; background: var(--surface-2);
+    color: var(--ink-2); display: grid; place-items: center; position: relative; overflow: hidden;
+  }
+  .sbtn.cal input { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; }
+  .wnav {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px; background: var(--surface);
+    border-radius: var(--r); padding: 6px; box-shadow: var(--shadow); margin-bottom: 10px; font-size: 14px;
+  }
+  .info {
+    display: flex; gap: 8px; align-items: flex-start; background: color-mix(in srgb, var(--warn) 10%, var(--surface));
+    color: var(--ink-2); border-radius: var(--r); padding: 10px 12px; font-size: 12.5px; margin-bottom: 10px;
+  }
+  .info .ic { color: var(--warn); margin-top: 1px; }
+  .search {
+    display: flex; align-items: center; gap: 8px; background: var(--surface); border-radius: var(--r);
+    padding: 0 12px; box-shadow: var(--shadow); margin-bottom: 10px; color: var(--ink-3);
+    border: 1.5px solid transparent;
+  }
+  .search:focus-within { border-color: var(--brand); }
+  .search input { flex: 1; border: 0; outline: 0; background: none; padding: 12px 0; font-size: 15px; color: var(--ink); min-width: 0; }
+
+  /* ============ দ্রুত যোগ ============ */
+  .quick {
+    display: flex; align-items: center; gap: 6px; background: var(--surface); border-radius: var(--r);
+    padding: 5px 5px 5px 12px; box-shadow: var(--shadow); margin-bottom: 10px;
+    border: 1.5px solid transparent; transition: border-color .15s;
+  }
+  .quick:focus-within { border-color: var(--brand); }
+  .quick .qi { color: var(--warn); }
+  .quick input { flex: 1; border: 0; outline: 0; background: none; padding: 8px 0; font-size: 14.5px; min-width: 0; }
+  .quick input::placeholder, .inp::placeholder { color: var(--ink-3); }
+  .qbtn {
+    width: 36px; height: 36px; border-radius: 10px; border: 0; display: grid; place-items: center;
+    background: var(--surface-2); color: var(--ink-2); flex: none; transition: transform .12s, opacity .12s;
+  }
+  .qbtn:active { transform: scale(.92); }
+  .qbtn:disabled { opacity: .5; }
+  .qbtn.go { background: linear-gradient(135deg, var(--hero-2), var(--hero-3)); color: #fff; }
+
+  /* ============ ফিল্টার ============ */
+  .chips-row { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; margin: 0 -14px 4px; padding: 0 14px 6px; }
+  .chips-row::-webkit-scrollbar { display: none; }
+  .fchip {
+    flex: none; border: 1px solid var(--line); background: var(--surface); color: var(--ink-2);
+    border-radius: 999px; padding: 5px 11px; font-size: 12px; font-weight: 600;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .fchip .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--c); }
+  .fchip small { color: var(--ink-3); font-weight: 600; font-size: 11px; }
+  .fchip.on { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+  .fchip.on small { color: inherit; opacity: .65; }
+
+  /* ============ সেকশন ============ */
+  .sec {
+    display: flex; align-items: center; gap: 8px; margin: 12px 2px 8px;
+    font-size: 12px; font-weight: 700; color: var(--ink-2);
+  }
+  .sec .sub { font-weight: 500; color: var(--ink-3); }
+  .sec .rule { flex: 1; height: 1px; background: var(--line); }
+  .sec.tap { cursor: pointer; user-select: none; }
+  .sec .act { color: var(--brand); }
+  .sec .add {
+    border: 0; background: var(--surface-2); color: var(--brand); width: 26px; height: 26px;
+    border-radius: 8px; display: grid; place-items: center;
+  }
+  .sec .offtag { font-size: 10.5px; color: var(--danger); background: color-mix(in srgb, var(--danger) 10%, transparent); padding: 1px 7px; border-radius: 999px; }
+  .none-day { font-size: 12px; color: var(--ink-3); padding: 2px 4px 4px; }
+
+  /* ============ কাজের কার্ড ============ */
+  .card {
+    display: flex; gap: 10px; align-items: flex-start; background: var(--surface);
+    border-radius: var(--r); padding: 11px 12px 11px 13px; box-shadow: var(--shadow);
+    position: relative; overflow: hidden; margin-bottom: 8px; cursor: pointer;
+    transition: transform .12s, opacity .2s;
+  }
+  .card:active { transform: scale(.99); }
+  .card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--c); }
+  .card.stuck::before { background: repeating-linear-gradient(180deg, var(--danger) 0 6px, transparent 6px 10px); }
+  .chk {
+    width: 23px; height: 23px; border-radius: 50%; border: 2px solid var(--c); flex: none;
+    display: grid; place-items: center; margin-top: 1px; background: transparent; color: #fff; padding: 0;
+    transition: transform .2s cubic-bezier(.34,1.56,.64,1), background .15s;
+  }
+  .chk:active { transform: scale(.85); }
+  .card.done { opacity: .62; }
+  .card.done .chk { background: var(--c); }
+  .card.done .ttl { text-decoration: line-through; color: var(--ink-3); }
+  .cbody { flex: 1; min-width: 0; }
+  .row1 { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; }
+  .ttl { font-weight: 600; font-size: 14.5px; line-height: 1.38; word-wrap: break-word; min-width: 0; }
+  .tm {
+    font-size: 12px; font-weight: 700; color: var(--ink-2); white-space: nowrap;
+    font-variant-numeric: tabular-nums; background: var(--surface-2); padding: 2px 7px; border-radius: 7px;
+  }
+  .tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; align-items: center; }
+  .tag {
+    font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; line-height: 1.5;
+    background: color-mix(in srgb, var(--t) 13%, transparent); color: var(--t);
+    display: inline-flex; align-items: center; gap: 4px;
+  }
+  @media (prefers-color-scheme: dark) { .tag { color: color-mix(in srgb, var(--t) 60%, white); } }
+  .tag.plain { background: var(--surface-2); color: var(--ink-2); }
+  .note {
+    font-size: 12.5px; color: var(--ink-2); margin-top: 6px; line-height: 1.4;
+    display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .note::before { content: '✎ '; color: var(--ink-3); }
+  .mini {
+    flex: none; align-self: center; border: 0; border-radius: 9px; padding: 6px 8px 6px 10px;
+    background: color-mix(in srgb, var(--brand) 12%, transparent); color: var(--brand);
+    font-weight: 700; font-size: 12px; display: flex; align-items: center; gap: 2px;
+  }
+
+  .empty {
+    text-align: center; padding: 30px 20px; background: var(--surface); border-radius: var(--r);
+    box-shadow: var(--shadow); color: var(--ink-2); margin-bottom: 8px;
+  }
+  .empty .g { font-size: 30px; }
+  .empty .t1 { font-weight: 800; font-size: 15px; color: var(--ink); letter-spacing: .06em; margin-top: 6px; }
+  .empty .t2 { font-size: 13px; margin-top: 3px; }
+  .empty .btn { margin-top: 12px; }
+
+  .sk {
+    height: 64px; border-radius: var(--r); margin-bottom: 8px;
+    background: linear-gradient(90deg, var(--surface) 25%, var(--surface-2) 50%, var(--surface) 75%);
+    background-size: 200% 100%; animation: sh 1.3s infinite linear;
+  }
+  @keyframes sh { to { background-position: -200% 0; } }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ============ বোতাম ============ */
+  .btn {
+    border: 0; border-radius: 12px; padding: 11px 16px; font-weight: 700; font-size: 14px;
+    display: inline-flex; align-items: center; justify-content: center; gap: 7px; transition: transform .12s, opacity .12s;
+  }
+  .btn:active { transform: scale(.97); }
+  .btn.primary { background: linear-gradient(135deg, var(--hero-2), var(--hero-3)); color: #fff; box-shadow: 0 6px 16px -8px rgba(79,70,229,.8); }
+  .btn.ghost { background: var(--surface-2); color: var(--ink); }
+  .btn.danger { background: color-mix(in srgb, var(--danger) 12%, transparent); color: var(--danger); }
+  .btn.danger.solid { background: var(--danger); color: #fff; }
+  .btn.sm { padding: 7px 11px; font-size: 12.5px; border-radius: 10px; }
+  .btn.icon { width: 46px; padding: 0; height: 46px; }
+  .btn.grow { flex: 1; }
+  .btn.loading { opacity: .7; pointer-events: none; }
+  .btn.loading::before {
+    content: ''; width: 14px; height: 14px; border: 2px solid currentColor; border-right-color: transparent;
+    border-radius: 50%; animation: spin .8s linear infinite;
+  }
+
+  /* ============ নিচের নেভিগেশন ============ */
+  .nav {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
+    background: color-mix(in srgb, var(--surface) 90%, transparent);
+    backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+    border-top: 1px solid var(--line);
+    padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+  }
+  .nav-in { display: flex; max-width: 560px; margin: 0 auto; }
+  .nav button {
+    flex: 1; border: 0; background: none; color: var(--ink-3); padding: 5px 0 3px;
+    display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 11px; font-weight: 600;
+  }
+  .nav button .pip { width: 44px; height: 28px; border-radius: 14px; display: grid; place-items: center; transition: background .15s; }
+  .nav button.on { color: var(--brand); }
+  .nav button.on .pip { background: color-mix(in srgb, var(--brand) 14%, transparent); }
+  .fab {
+    position: fixed; z-index: 41; right: max(16px, calc(50% - 264px));
+    bottom: calc(78px + env(safe-area-inset-bottom));
+    width: 56px; height: 56px; border-radius: 18px; border: 0; color: #fff;
+    background: linear-gradient(135deg, var(--hero-2), var(--hero-3));
+    box-shadow: 0 12px 26px -8px rgba(79,70,229,.75); display: grid; place-items: center;
+    transition: transform .15s;
+  }
+  .fab:active { transform: scale(.92); }
+
+  /* ============ বটম শিট (ফর্ম) ============ */
+  .scrim { position: fixed; inset: 0; background: rgba(10,12,30,.45); opacity: 0; pointer-events: none; transition: opacity .2s; z-index: 60; }
+  .scrim.open { opacity: 1; pointer-events: auto; }
+  .sheet {
+    position: fixed; left: 0; right: 0; bottom: 0; margin: 0 auto; max-width: 560px; max-height: 92vh;
+    overflow-y: auto; background: var(--surface); border-radius: 24px 24px 0 0; z-index: 61;
+    padding: 6px 16px calc(16px + env(safe-area-inset-bottom));
+    transform: translateY(105%); transition: transform .3s cubic-bezier(.2,.8,.2,1);
+    box-shadow: var(--shadow-lg);
+  }
+  .sheet.open { transform: none; }
+  .grab { width: 38px; height: 4px; border-radius: 2px; background: var(--surface-3); margin: 4px auto 8px; }
+  .sh-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .sh-head h2 { margin: 0; font-size: 17px; font-weight: 800; }
+  .x { width: 34px; height: 34px; border-radius: 10px; border: 0; background: var(--surface-2); color: var(--ink-2); display: grid; place-items: center; }
+  .fld { margin-top: 13px; }
+  .lbl { font-size: 12px; font-weight: 700; color: var(--ink-2); margin-bottom: 6px; }
+  .hint { font-size: 11.5px; color: var(--ink-3); font-weight: 500; margin-top: 5px; }
+  .lbl .hint { display: inline; margin: 0; }
+  .inp {
+    width: 100%; border: 1.5px solid var(--line); background: var(--surface-2); border-radius: 12px;
+    padding: 10px 12px; color: var(--ink); outline: none; transition: border-color .15s, background .15s;
+    font-size: 14.5px; resize: vertical; min-height: 42px;
+  }
+  .inp:focus { border-color: var(--brand); background: var(--surface); }
+  .ttl-inp { font-size: 16px; font-weight: 600; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip {
+    border: 1.5px solid var(--line); background: var(--surface); color: var(--ink-2); border-radius: 999px;
+    padding: 6px 12px; font-weight: 600; font-size: 12.5px; display: inline-flex; align-items: center; gap: 6px;
+    transition: background .15s, color .15s, border-color .15s;
+  }
+  .chip .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--c, var(--brand)); }
+  .chip.on { background: var(--c, var(--brand)); border-color: var(--c, var(--brand)); color: #fff; }
+  .chip.on .dot { background: #fff; }
+  .chip.sm { padding: 5px 10px; font-size: 12px; }
+  .seg { display: flex; background: var(--surface-2); border-radius: 12px; padding: 3px; gap: 3px; }
+  .seg button { flex: 1; border: 0; background: none; padding: 8px 4px; border-radius: 9px; font-weight: 700; font-size: 13px; color: var(--ink-2); }
+  .seg button.on { background: var(--c, var(--surface)); color: #fff; box-shadow: var(--shadow); }
+  .daterow { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+  .daterow .inp { flex: 1 1 150px; width: auto; }
+  .timerow { display: flex; gap: 8px; align-items: center; }
+  .tin { position: relative; flex: 1; }
+  .tin .inp { padding-right: 34px; }
+  .clr { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); width: 24px; height: 24px; border: 0; border-radius: 7px; background: var(--surface-3); color: var(--ink-2); display: grid; place-items: center; }
+  .dash { font-size: 12px; color: var(--ink-3); }
+  .meta { margin-top: 14px; font-size: 11.5px; color: var(--ink-3); display: flex; gap: 10px; flex-wrap: wrap; }
+  .ferr { display: none; margin-top: 12px; background: color-mix(in srgb, var(--danger) 10%, transparent); color: var(--danger); padding: 9px 12px; border-radius: 10px; font-size: 13px; font-weight: 600; }
+  .ferr.show { display: block; }
+  .sh-act { display: flex; gap: 8px; margin-top: 16px; position: sticky; bottom: 0; background: var(--surface); padding-top: 8px; }
+  .swrow { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .sw { width: 44px; height: 26px; border-radius: 13px; background: var(--surface-3); border: 0; position: relative; flex: none; transition: background .2s; padding: 0; }
+  .sw::after { content: ''; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.25); transition: transform .2s; }
+  .sw.on { background: var(--ok); }
+  .sw.on::after { transform: translateX(18px); }
+
+  /* ============ প্যানেল / রিপোর্ট ============ */
+  .panel { background: var(--surface); border-radius: var(--r); box-shadow: var(--shadow); padding: 14px; margin-bottom: 12px; }
+  .panel h3 { margin: 0 0 12px; font-size: 14px; font-weight: 800; display: flex; align-items: center; gap: 8px; }
+  .panel h3 .ic { color: var(--brand); }
+  .panel h3 small { margin-left: auto; font-size: 11px; color: var(--ink-3); font-weight: 600; }
+  .today-card { display: flex; align-items: center; gap: 16px; }
+  .tc-ring { position: relative; width: 84px; height: 84px; flex: none; }
+  .tc-ring b { position: absolute; inset: 0; display: grid; place-items: center; font-size: 19px; font-weight: 800; }
+  .k { font-size: 12px; color: var(--ink-2); font-weight: 600; }
+  .v { font-size: 24px; font-weight: 800; letter-spacing: -.02em; margin-top: 1px; }
+  .s { font-size: 12px; color: var(--ink-3); }
+  .tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+  .tile { background: var(--surface); border-radius: var(--r); box-shadow: var(--shadow); padding: 12px 14px; position: relative; overflow: hidden; }
+  .tile::after { content: ''; position: absolute; right: -22px; top: -22px; width: 84px; height: 84px; border-radius: 50%; background: var(--c); opacity: .14; }
+  .tile .v { color: var(--c); }
+  .bars .b { margin-bottom: 10px; }
+  .bars .b:last-child { margin-bottom: 0; }
+  .bh { display: flex; justify-content: space-between; font-size: 12.5px; margin-bottom: 5px; gap: 8px; }
+  .bh span { color: var(--ink-3); font-variant-numeric: tabular-nums; }
+  .track { height: 8px; border-radius: 5px; background: var(--surface-2); overflow: hidden; }
+  .track i { display: block; height: 100%; border-radius: 5px; background: var(--c); transition: width .5s ease; }
+  .trend { display: flex; align-items: flex-end; gap: 5px; height: 130px; }
+  .tcol { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; min-width: 0; }
+  .tbar { flex: 1; width: 100%; max-width: 22px; display: flex; flex-direction: column; justify-content: flex-end; }
+  .tot { background: var(--surface-3); border-radius: 6px; position: relative; overflow: hidden; min-height: 4px; }
+  .tot i { position: absolute; left: 0; right: 0; bottom: 0; background: linear-gradient(180deg, var(--hero-3), var(--hero-2)); }
+  .tlbl { font-size: 9.5px; color: var(--ink-3); line-height: 1.1; text-align: center; }
+  .tlbl.now { color: var(--brand); font-weight: 700; }
+  .legend { display: flex; gap: 14px; font-size: 11px; color: var(--ink-3); margin-top: 10px; }
+  .legend i { display: inline-block; width: 9px; height: 9px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+  .lrow { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-top: 1px solid var(--line); cursor: pointer; }
+  .lrow:first-of-type { border-top: 0; padding-top: 2px; }
+  .lrow .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--c); flex: none; }
+  .lrow .lt { flex: 1; min-width: 0; font-weight: 600; font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .lrow .ls { font-size: 11.5px; color: var(--ink-3); white-space: nowrap; }
+  .prow { display: flex; gap: 8px; margin-bottom: 10px; }
+  .prow .inp { flex: 1; }
+  .tools { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .tool {
+    display: flex; gap: 10px; align-items: center; text-align: left; border: 0; background: var(--surface-2);
+    border-radius: 12px; padding: 10px; min-width: 0; transition: transform .12s;
+  }
+  .tool:active { transform: scale(.97); }
+  .tool .ti { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; color: #fff; background: var(--c); flex: none; }
+  .tool b { display: block; font-size: 12.5px; line-height: 1.25; }
+  .tool span { display: block; font-size: 10.5px; color: var(--ink-3); line-height: 1.3; margin-top: 1px; }
+  .tool.loading { opacity: .6; pointer-events: none; }
+  .tool.loading .ti .ic { animation: spin .9s linear infinite; }
+  .hrow { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-top: 1px solid var(--line); }
+  .panel h3 + .hrow, .panel h3 + .lrow { border-top: 0; }
+  .hrow .hd { width: 44px; text-align: center; flex: none; background: color-mix(in srgb, var(--danger) 10%, transparent); color: var(--danger); border-radius: 10px; padding: 4px 0; line-height: 1.1; }
+  .hrow .hd b { display: block; font-size: 16px; }
+  .hrow .hd span { font-size: 10px; font-weight: 600; }
+  .hrow.past { opacity: .5; }
+  .hrow .hx { flex: 1; min-width: 0; }
+  .hrow .hx b { display: block; font-size: 13.5px; }
+  .hrow .hx span { font-size: 11.5px; color: var(--ink-3); }
+  .addrow { display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; margin-top: 12px; }
+  .addrow.two { grid-template-columns: 1fr auto; }
+  /* নিরাপত্তা প্যানেল */
+  .sec-h { display: flex; align-items: center; margin: 16px 0 2px; font-size: 12px; font-weight: 800; color: var(--ink-2); }
+  .panel h3 + .sec-h { margin-top: 0; }
+  .sec-h small { margin-left: auto; font-size: 11px; color: var(--ink-3); font-weight: 600; }
+  .srow { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-top: 1px solid var(--line); }
+  .sec-h + .srow { border-top: 0; }
+  .srow .si { width: 34px; height: 34px; flex: none; border-radius: 10px; display: grid; place-items: center;
+    background: color-mix(in srgb, var(--c, var(--brand)) 12%, transparent); color: var(--c, var(--brand)); }
+  .srow .sx { flex: 1; min-width: 0; }
+  .srow .sx b { display: block; font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .srow .sx span { display: block; font-size: 11.5px; color: var(--ink-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .srow .me { font-style: normal; font-size: 10.5px; font-weight: 700; color: var(--ok); background: color-mix(in srgb, var(--ok) 12%, transparent); padding: 1px 7px; border-radius: 99px; margin-left: 4px; }
+  .rhead { display: flex; align-items: center; justify-content: space-between; margin: 2px 2px 10px; font-size: 13px; color: var(--ink-2); }
+  .rhead b { color: var(--ink); }
+  .link { display: flex; align-items: center; gap: 10px; color: var(--ink); text-decoration: none; font-weight: 600; }
+  .link span { flex: 1; }
+  .foot { text-align: center; font-size: 11px; color: var(--ink-3); padding: 6px 0 16px; }
+
+  /* ============ ডায়ালগ ও টোস্ট ============ */
+  .dlg { position: fixed; inset: 0; display: none; place-items: center; z-index: 80; background: rgba(10,12,30,.5); padding: 20px; }
+  .dlg.open { display: grid; }
+  .dlg-box { background: var(--surface); border-radius: 20px; padding: 20px; max-width: 380px; width: 100%; box-shadow: var(--shadow-lg); }
+  .dlg-box h3 { margin: 0 0 6px; font-size: 16px; }
+  .dlg-box p { margin: 0; color: var(--ink-2); white-space: pre-wrap; font-size: 13.5px; max-height: 50vh; overflow: auto; }
+  .dlg-act { display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px; }
+  .toast {
+    position: fixed; left: 50%; bottom: calc(150px + env(safe-area-inset-bottom)); z-index: 90;
+    transform: translate(-50%, 10px); background: var(--ink); color: var(--surface);
+    padding: 10px 16px; border-radius: 12px; font-size: 13px; font-weight: 600;
+    opacity: 0; transition: opacity .2s, transform .2s; pointer-events: none; max-width: 88vw; text-align: center;
+    box-shadow: var(--shadow-lg);
+  }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+
+  /* ============ রিপোর্ট প্রিন্ট ============ */
+  #tpPrint { display: none; }
+  @media print {
+    body > *:not(#tpPrint) { display: none !important; }
+    body { background: #fff !important; padding: 0; margin: 0; }
+    #tpPrint { display: block !important; color: #000; font-family: 'Times New Roman', Times, serif; }
+    #tpPrint .p-head { position: relative; min-height: 66px; padding: 0 76px; }
+    #tpPrint .p-logo { position: absolute; left: 0; top: 2px; width: 62px; height: 62px; object-fit: contain; }
+    #tpPrint .p-org { text-align: center; font-size: 20px; font-weight: bold; color: #000; padding-top: 4px; margin-bottom: 2px; }
+    #tpPrint h2 { font-size: 13px; font-weight: bold; letter-spacing: .12em; text-transform: uppercase; text-align: center; margin: 0 0 2px; }
+    #tpPrint .p-name { text-align: center; font-size: 11px; color: #333; margin-bottom: 4px; }
+    #tpPrint .p-date { text-align: center; font-size: 11px; color: #555; margin-bottom: 10px; }
+    #tpPrint .p-rule { border-bottom: 1px solid #000; margin-bottom: 12px; }
+    #tpPrint .p-sum { text-align: center; font-weight: bold; font-size: 11px; margin-bottom: 14px; letter-spacing: .04em; }
+    #tpPrint table { width: 100%; border-collapse: collapse; font-size: 10.5px; }
+    #tpPrint th, #tpPrint td { border: 1px solid #bbb; padding: 5px 7px; vertical-align: top; }
+    #tpPrint th { font-weight: bold; text-align: left; border-bottom: 2px solid #000; }
+    #tpPrint td.c, #tpPrint th.c { text-align: center; }
+    #tpPrint .p-sign { display: flex; justify-content: space-between; margin-top: 64px; page-break-inside: avoid; }
+    #tpPrint .p-sign div { width: 200px; text-align: center; border-top: 1px solid #000; padding-top: 4px; font-size: 11px; font-weight: bold; }
+    #tpPrint .p-sign small { display: block; margin-top: 1px; font-size: 9px; font-weight: normal; color: #555; }
+    #tpPrint .p-foot { margin-top: 18px; text-align: center; font-size: 8px; color: #999; }
+  }
+</style>
+</head>
+<body>
+<!-- ══════════════════════════════════════════════════════════════════
+     🔒 APP LOCK — অ্যাপ খুলতে secret PIN (Apps Script-এর AppLock ফাইলের
+     GitHub সংস্করণ)। PIN সার্ভারে hash হয়ে থাকে, পরিচয় যাচাই WebApi করে।
+     লগইন না থাকলে আগে লগইন পাতা, তারপর PIN।
+     ব্রাউজারে শুধু "শেষ কবে কিছু করা হয়েছে" সময়টা থাকে, PIN নয়।
+     ══════════════════════════════════════════════════════════════════ -->
+<div id="alLock" role="dialog" aria-modal="true">
+<style>
+  /* ডিফল্টে লক — স্ক্রিপ্ট কোনো কারণে না চললেও অ্যাপ খোলা থাকবে না */
+  html[data-al-open] #alLock { display: none !important; }
+  html:not([data-al-open]), html:not([data-al-open]) body { overflow: hidden !important; }
+  html:not([data-al-open]) body > *:not(#alLock) { visibility: hidden !important; }
+  #alLock {
+    position: fixed; inset: 0; z-index: 2147483647; display: flex; align-items: center; justify-content: center;
+    padding: 16px; overflow-y: auto; box-sizing: border-box; visibility: visible !important;
+    background: radial-gradient(circle at 20% 15%, #4b3fd6 0, transparent 45%),
+                radial-gradient(circle at 85% 90%, #b8336a 0, transparent 40%), #14122b;
+    font-family: 'Hind Siliguri', 'Nirmala UI', 'Segoe UI', system-ui, sans-serif; color: #1a1a2e;
+  }
+  #alLock * { box-sizing: border-box; }
+  #alLock .al-card {
+    width: 100%; max-width: 360px; background: #fff; border-radius: 22px; padding: 26px 22px 20px;
+    box-shadow: 0 24px 60px rgba(0,0,0,.45); text-align: center; margin: auto;
+  }
+  #alLock .al-ico {
+    width: 64px; height: 64px; margin: 0 auto 12px; border-radius: 18px; display: flex; align-items: center; justify-content: center;
+    font-size: 30px; background: linear-gradient(135deg, #6c5ce7, #a55eea); box-shadow: 0 8px 22px rgba(108,92,231,.4);
+  }
+  #alLock .al-logo {
+    display: block; width: auto; height: auto; max-width: 180px; max-height: 96px; margin: 0 auto 12px;
+    object-fit: contain; border: none; box-shadow: none;
+  }
+  #alLock .al-org { font-size: 20px; font-weight: 800; color: #1a1a2e; margin: 0 0 2px; line-height: 1.3; letter-spacing: .2px; }
+  #alLock .al-app { font-size: 12.5px; font-weight: 700; color: #8a86a8; letter-spacing: .3px; margin: 0 0 18px; }
+  #alLock .al-sub { font-size: 13px; font-weight: 600; color: #6b6b85; line-height: 1.55; margin: -4px 0 14px; }
+  #alLock .al-sub:empty { display: none; }
+  #alLock .al-f { text-align: left; margin-bottom: 10px; }
+  #alLock .al-f label { display: block; font-size: 12.5px; font-weight: 800; color: #444; margin: 0 0 5px; }
+  #alLock .al-in {
+    display: block; width: 100%; margin: 0; padding: 12px 14px; border: 2px solid #e1e5f0; border-radius: 12px;
+    font-family: inherit; font-size: 18px; font-weight: 700; line-height: 1.2; letter-spacing: 3px; color: #1a1a2e; background: #fff;
+    -webkit-text-security: disc; outline: none; box-shadow: none; height: auto; min-height: 0;
+  }
+  #alLock.al-show .al-in { -webkit-text-security: none; }
+  #alLock .al-in:focus { border-color: #6c5ce7; box-shadow: 0 0 0 3px rgba(108,92,231,.15); }
+  #alLock .al-btn {
+    display: block; width: 100%; margin: 6px 0 0; padding: 13px; border: none; border-radius: 12px; cursor: pointer;
+    font-family: inherit; font-size: 15px; font-weight: 800; line-height: 1.2; color: #fff; background: linear-gradient(135deg, #6c5ce7, #4a3fc4);
+    box-shadow: 0 6px 18px rgba(108,92,231,.35); height: auto;
+  }
+  #alLock .al-btn:disabled { opacity: .6; cursor: wait; }
+  #alLock .al-err { min-height: 18px; margin: 10px 0 0; font-size: 13px; font-weight: 700; color: #c0392b; line-height: 1.5; }
+  #alLock .al-err.ok { color: #2d6a4f; }
+  #alLock .al-row { display: flex; justify-content: space-between; gap: 10px; margin-top: 12px; }
+  #alLock .al-link {
+    background: none; border: none; padding: 4px 0; margin: 0; cursor: pointer;
+    font-family: inherit; font-size: 12.5px; font-weight: 700; line-height: 1.3; color: #4a3fc4; box-shadow: none; width: auto; height: auto;
+  }
+  #alLock .al-foot { margin-top: 14px; font-size: 11.5px; font-weight: 600; color: #9a97b5; line-height: 1.5; }
+</style>
+<form class="al-card" id="alForm" autocomplete="off" novalidate>
+  <img class="al-logo" id="alLogo" src="logo.png" alt="logo">
+  <div class="al-ico" id="alIco" style="display:none">🔒</div>
+  <div class="al-org">Technique Easy Education</div>
+  <div class="al-app">Daily Todo</div>
+  <div class="al-sub" id="alSub"></div>
+  <div class="al-f" id="alFa"><label for="alA" id="alLa"></label><input class="al-in" id="alA" type="text" autocomplete="off" autocapitalize="off" spellcheck="false"></div>
+  <div class="al-f" id="alFb"><label for="alB" id="alLb"></label><input class="al-in" id="alB" type="text" autocomplete="off" autocapitalize="off" spellcheck="false"></div>
+  <div class="al-f" id="alFc"><label for="alC" id="alLc"></label><input class="al-in" id="alC" type="text" autocomplete="off" autocapitalize="off" spellcheck="false"></div>
+  <button class="al-btn" id="alBtn" type="submit"></button>
+  <div class="al-err" id="alErr"></div>
+  <div class="al-row">
+    <button class="al-link" id="alEye" type="button">👁 Show PIN</button>
+    <button class="al-link" id="alSwitch" type="button"></button>
+  </div>
+  <div class="al-foot">Authorized Holder: Md. Ashraful Islam</div>
+</form>
+<script>
+(function () {
+  var MODE = '', IDLE_MIN = 15, MINLEN = 4;
+  // github.io-র সব রিপোজিটরি একই ব্রাউজার storage ভাগ করে — তাই key-তে "todo_"
+  var IDLE = IDLE_MIN * 60000, KEY = 'todo_appLockLast';
+  var root = document.documentElement, box = document.getElementById('alLock');
+  function $(id) { return document.getElementById(id); }
+  function bn(n) { return String(n).replace(/[0-9]/g, function (d) { return '০১২৩৪৫৬৭৮৯'[d]; }); }
+
+  // logo না এলে 🔒
+  var logo = $('alLogo');
+  var noLogo = function () { logo.style.display = 'none'; $('alIco').style.display = ''; };
+  logo.addEventListener('error', noLogo);
+  if (logo.complete && !logo.naturalWidth) noLogo();
+
+  // loginWait — লগইন হয়নি; লগইন পাতা খোলা রাখি, লগইনের পর PIN চাই
+  var mode = '', locked = true, busy = false, mem = 0, lastWrite = 0, loginWait = false;
+
+  // শেষ কাজের সময় — একই অ্যাপের অন্য উইন্ডোর সাথেও ভাগ হয়
+  function readLast() {
+    var v = 0;
+    try { v = Number(localStorage.getItem(KEY)) || 0; } catch (e) {}
+    return Math.max(v, mem);
+  }
+  function writeLast(t) {
+    mem = t; lastWrite = Date.now();
+    try { localStorage.setItem(KEY, String(t)); } catch (e) {}
+  }
+  function stale() { return Date.now() - readLast() > IDLE; }
+
+  var TEXT = {
+    wait:   { sub: '⏳ একটু অপেক্ষা করুন...', a: 'Please Enter the Pin', btn: 'Enter', busy: '', sw: '' },
+    unlock: { sub: '', a: 'Please Enter the Pin', btn: 'Enter', busy: 'Logging IN...', sw: '🔑 PIN change?' },
+    setup:  { sub: 'নতুন PIN ঠিক করুন — এরপর থেকে এই অ্যাপ খুলতে এই PIN লাগবে। অন্তত ' + bn(MINLEN) + ' অক্ষর।',
+              a: 'New PIN', b: 'Confirm PIN', btn: 'Set PIN', busy: '⏳ সেভ হচ্ছে...', sw: '' },
+    change: { sub: 'আগে বর্তমান PIN দিন, তারপর নতুন PIN।',
+              a: 'Current PIN', b: 'New PIN', c: 'Confirm new PIN', btn: 'Change PIN', busy: '⏳ যাচাই হচ্ছে...', sw: '← ফিরে যান' }
+  };
+
+  function setMode(m) {
+    mode = m;
+    var t = TEXT[m];
+    $('alSub').textContent = t.sub; $('alBtn').textContent = t.btn;
+    $('alBtn').disabled = m === 'wait';
+    $('alLa').textContent = t.a; $('alLb').textContent = t.b || ''; $('alLc').textContent = t.c || '';
+    $('alFb').style.display = t.b ? '' : 'none';
+    $('alFc').style.display = t.c ? '' : 'none';
+    $('alSwitch').textContent = t.sw; $('alSwitch').style.display = t.sw ? '' : 'none';
+    $('alA').value = $('alB').value = $('alC').value = '';
+    msg('');
+    focusA();
+  }
+  function focusA() { setTimeout(function () { try { $('alA').focus(); } catch (e) {} }, 30); }
+  function msg(s, ok) { var e = $('alErr'); e.textContent = s; e.className = 'al-err' + (ok ? ' ok' : ''); }
+
+  function lock() {
+    if (!AUTH) { waitForLogin(); return; }
+    locked = true; loginWait = false;
+    root.removeAttribute('data-al-open');
+    if (document.activeElement && !box.contains(document.activeElement)) { try { document.activeElement.blur(); } catch (e) {} }
+    if (MODE) { setMode(MODE); return; }
+    // PIN আগে সেট করা আছে কি না — সার্ভার জানে
+    setMode('wait');
+    callServer('appLockMode', []).then(function (m) {
+      MODE = m === 'setup' ? 'setup' : 'unlock';
+      if (locked && mode === 'wait') setMode(MODE);
+    }, function (err) {
+      if (/AUTH_REQUIRED/.test(err.message)) { setAuth(''); waitForLogin(); return; }
+      msg(err.message);
+      $('alBtn').disabled = false; $('alBtn').textContent = '🔄 আবার চেষ্টা';
+    });
+  }
+  function unlock() {
+    locked = false; loginWait = false;
+    writeLast(Date.now());
+    $('alA').value = $('alB').value = $('alC').value = '';
+    root.setAttribute('data-al-open', '');
+  }
+  // লগইন পাতা দেখাতে লক সরিয়ে রাখি — লগইন নিজেই পাহারাদার
+  function waitForLogin() {
+    locked = false; loginWait = true;
+    root.setAttribute('data-al-open', '');
+  }
+  window.appLockWaitLogin = waitForLogin;
+  window.appLockAfterLogin = function () { if (stale()) lock(); else unlock(); };
+
+  function check() { if (!locked && !loginWait && stale()) lock(); }
+
+  function activity() {
+    if (locked || loginWait) return;
+    if (stale()) { lock(); return; }
+    var n = Date.now();
+    mem = n;
+    if (n - lastWrite > 15000) writeLast(n);
+  }
+
+  function run(fn, args, ok) {
+    var btn = $('alBtn'), label = btn.textContent;
+    busy = true; btn.disabled = true; btn.textContent = TEXT[mode].busy; msg('');
+    var done = function () { busy = false; btn.disabled = false; btn.textContent = label; };
+    callServer(fn, args).then(function () { done(); ok(); }, function (err) {
+      done();
+      if (/AUTH_REQUIRED/.test(err.message)) { setAuth(''); waitForLogin(); return; }
+      msg(String(err.message).replace(/^(Exception|Error):\s*/, ''));
+      try { $('alA').select(); } catch (e) {}
+    });
+  }
+
+  $('alForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    if (busy) return;
+    if (mode === 'wait') { lock(); return; }   // "আবার চেষ্টা"
+    var a = $('alA').value.trim(), b = $('alB').value.trim(), c = $('alC').value.trim();
+    if (mode === 'unlock') {
+      if (!a) { msg('PIN লিখুন।'); focusA(); return; }
+      run('appLockUnlock', [a], unlock);
+    } else if (mode === 'setup') {
+      if (a.length < MINLEN) { msg('PIN অন্তত ' + bn(MINLEN) + ' অক্ষরের দিন।'); focusA(); return; }
+      if (a !== b) { msg('দুইবার একই PIN লিখুন।'); $('alB').focus(); return; }
+      run('appLockSetup', [a], function () { MODE = 'unlock'; unlock(); });
+    } else {
+      if (!a) { msg('বর্তমান PIN লিখুন।'); focusA(); return; }
+      if (b.length < MINLEN) { msg('নতুন PIN অন্তত ' + bn(MINLEN) + ' অক্ষরের দিন।'); $('alB').focus(); return; }
+      if (b !== c) { msg('নতুন PIN দুইবার একই লিখুন।'); $('alC').focus(); return; }
+      run('appLockChange', [a, b], function () {
+        msg('✅ PIN বদলানো হয়েছে।', true);
+        setTimeout(unlock, 900);
+      });
+    }
+  });
+  $('alSwitch').addEventListener('click', function () { if (!busy) setMode(mode === 'change' ? 'unlock' : 'change'); });
+  $('alEye').addEventListener('click', function () {
+    var on = box.classList.toggle('al-show');
+    this.textContent = on ? '🙈 Hide PIN' : '👁 Show PIN';
+    focusA();
+  });
+
+  // লক থাকা অবস্থায় কীবোর্ড যেন পেছনের অ্যাপে না যায়
+  ['keydown', 'keypress', 'keyup'].forEach(function (t) {
+    window.addEventListener(t, function (e) {
+      if (locked && !box.contains(e.target)) {
+        e.stopImmediatePropagation(); e.preventDefault();
+        if (t === 'keydown') focusA();
+      }
+    }, true);
+  });
+  ['pointerdown', 'mousemove', 'keydown', 'wheel', 'touchstart', 'scroll'].forEach(function (t) {
+    document.addEventListener(t, activity, { capture: true, passive: true });
+  });
+  document.addEventListener('visibilitychange', check);
+  window.addEventListener('focus', check);
+  window.addEventListener('pagehide', function () { if (!locked && mem) writeLast(mem); });
+  setInterval(check, 15000);
+
+  // শুরু: লগইন নেই → লগইন পাতা; শেষ কাজ IDLE-এর মধ্যে হলে সরাসরি খোলা; নইলে PIN
+  if (!AUTH) waitForLogin();
+  else if (!stale()) unlock();
+  else lock();
+})();
+</script>
+</div>
+
+<div id="app">
+  <header class="hero" id="hero"></header>
+  <main id="view"></main>
+</div>
+
+<button class="fab" id="fab" data-act="fab" aria-label="নতুন"></button>
+
+<nav class="nav"><div class="nav-in" id="nav"></div></nav>
+
+<div class="scrim" id="scrim" data-act="close"></div>
+<section class="sheet" id="sheet" aria-modal="true" role="dialog"></section>
+<div class="dlg" id="dlg"></div>
+<div class="toast" id="toast"></div>
+<div id="tpPrint"></div>
+
+<script>
+/* =========================================================
+ *  Daily Todo — ওয়েব অ্যাপ (শিট শুধু ব্যাকএন্ড)
+ *  সার্ভার ফাংশন: Api ফাইলের api*()
+ * ========================================================= */
+
+// প্রতিষ্ঠানের নাম + logo (logo.png এই সাইটেই আছে — প্রিন্ট রিপোর্টেও বসে)
+const ORG_NAME = 'Technique Easy Education';
+const ORG_LOGO = new URL('logo.png', location.href).href;
+// কার To-Do — উপরের সোনালি pill আর প্রিন্ট রিপোর্টে (আরও → "To-Do-র মালিক" থেকে বদলায়)
+// সার্ভার থেকে আসে; লগইন পাতায় দেখানোর জন্য শেষবারেরটা ব্রাউজারে মনে রাখি
+const OWNER_KEY = 'todo_owner';
+let OWNER_NAME = 'Md. Ashraful Islam';
+try { OWNER_NAME = localStorage.getItem(OWNER_KEY) || OWNER_NAME; } catch (e) {}
+function setOwnerName(n) {
+  if (!n) return;
+  OWNER_NAME = n;
+  try { localStorage.setItem(OWNER_KEY, n); } catch (e) {}
+}
+
+const BN_WEEK      = ['রবি', 'সোম', 'মঙ্গল', 'বুধ', 'বৃহঃ', 'শুক্র', 'শনি'];
+const BN_WEEK_FULL = ['রবিবার', 'সোমবার', 'মঙ্গলবার', 'বুধবার', 'বৃহস্পতিবার', 'শুক্রবার', 'শনিবার'];
+const WEEK_EN      = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const SAT_FIRST    = [6, 0, 1, 2, 3, 4, 5];   // বাংলাদেশের সপ্তাহ শনিবার থেকে
+
+const CAT = {
+  'Task': '#6366F1', 'Event': '#059669', 'Meeting': '#D97706', 'Call': '#0284C7',
+  'Personal': '#DB2777', 'Shooting': '#EA580C', 'Boss Seating': '#E11D48', 'Other': '#64748B'
+};
+const PRI = { 'Must': '#E11D48', 'Should': '#2563EB', 'Could': '#64748B' };
+const STA = {
+  'To Do': '#64748B', 'Pending': '#D97706', 'Working': '#0284C7',
+  'Processing': '#7C3AED', 'Partially Done': '#0D9488', 'Done': '#059669'
+};
+const SRC = { 'app': 'অ্যাপ', 'quick-add': 'Quick add', 'entry': 'Entry শিট', 'google-tasks': 'Google Tasks', '': 'শিট' };
+
+const TOOLS = {
+  calendar:    ['Calendar sync', 'শিট → Google Calendar', 'calendar', '#0284C7'],
+  reconcile:   ['Calendar থেকে আনো', 'Calendar-এর বদল → শিট', 'refresh', '#0D9488'],
+  tasksync:    ['Google Tasks sync', 'Gemini/ভয়েসের কাজ', 'check', '#2563EB'],
+  recurring:   ['রুটিন তৈরি করো', 'আজ ও পরের কর্মদিবস', 'repeat', '#7C3AED'],
+  dedupe:      ['ডুপ্লিকেট মুছুন', 'একই দিনে একই কাজ', 'copy', '#E11D48', 'একই দিনে একই নাম ও সময়ের ডুপ্লিকেট কাজ মুছে ফেলা হবে। চালাবেন?'],
+  sort:        ['AllTasks সাজাও', 'বাকি আগে, Done নিচে', 'list', '#64748B'],
+  archive:     ['আর্কাইভ', '৬০ দিনের পুরনো Done', 'archive', '#92400E', '৬০ দিনের বেশি পুরনো Done কাজ Archive শিটে সরানো হবে। চালাবেন?'],
+  views:       ['শিট ভিউ রিফ্রেশ', 'TODAY/TOMORROW/DASHBOARD', 'grid', '#475569'],
+  health:      ['Health check', 'সেটআপ ঠিক আছে কি না', 'shield', '#059669'],
+  eod:         ['EOD রিপোর্ট পাঠাও', 'PDF + ইমেইল + Telegram', 'mail', '#D97706', 'আজকের End of Day রিপোর্ট ইমেইল ও Telegram-এ পাঠানো হবে। পাঠাবেন?'],
+  weekly:      ['সাপ্তাহিক রিভিউ', 'ইমেইল ও Telegram-এ', 'chart', '#6366F1'],
+  sheetReport: ['রিপোর্ট শিট আপডেট', 'Report শিটে আজকেরটা', 'note', '#0EA5E9'],
+  telegram:    ['Telegram টেস্ট', 'টেস্ট মেসেজ পাঠাও', 'send', '#0284C7']
+};
+
+const ICONS = {
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  check: '<path d="M20 6 9 17l-5-5"/>',
+  x: '<path d="M18 6 6 18M6 6l12 12"/>',
+  calendar: '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
+  clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  search: '<circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>',
+  refresh: '<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/>',
+  list: '<path d="M9 6h11M9 12h11M9 18h11"/><path d="m3 6 1 1 2-2M3 12l1 1 2-2M3 18l1 1 2-2"/>',
+  repeat: '<path d="m17 2 4 4-4 4"/><path d="M3 11V9a3 3 0 0 1 3-3h15"/><path d="m7 22-4-4 4-4"/><path d="M21 13v2a3 3 0 0 1-3 3H3"/>',
+  chart: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+  grid: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
+  trash: '<path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>',
+  chevL: '<path d="m15 18-6-6 6-6"/>',
+  chevR: '<path d="m9 18 6-6-6-6"/>',
+  user: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
+  note: '<path d="M4 4h16v12l-4 4H4z"/><path d="M16 20v-4h4"/>',
+  flag: '<path d="M4 22V4M4 4h13l-2 4 2 4H4"/>',
+  printer: '<path d="M6 9V2h12v7"/><rect x="2" y="9" width="20" height="8" rx="2"/><path d="M6 14h12v8H6z"/>',
+  send: '<path d="m22 2-7 20-4-9-9-4z"/><path d="M22 2 11 13"/>',
+  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  zap: '<path d="M13 2 3 14h9l-1 8 10-12h-9z"/>',
+  copy: '<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
+  key: '<circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6M15.5 7.5l3 3L22 7l-3-3"/>',
+  mail: '<rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 6-10 7L2 6"/>',
+  alert: '<path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/>',
+  archive: '<rect x="2" y="3" width="20" height="5" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8M10 12h4"/>',
+  shield: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/>',
+  sliders: '<path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/>',
+  sheet: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/>',
+  ext: '<path d="M15 3h6v6M10 14 21 3M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"/>'
+};
+
+function ic(name, size) {
+  const s = size || 18;
+  return '<svg class="ic" width="' + s + '" height="' + s + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
+         'stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (ICONS[name] || '') + '</svg>';
+}
+
+const $ = function (sel, el) { return (el || document).querySelector(sel); };
+
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+  });
+}
+
+/* ---------- তারিখ ('yyyy-mm-dd' স্ট্রিং, UTC-তে হিসাব — টাইমজোনের ঝামেলা নেই) ---------- */
+function k2d(k) { const p = k.split('-'); return new Date(Date.UTC(+p[0], +p[1] - 1, +p[2])); }
+function d2k(d) { return d.toISOString().slice(0, 10); }
+function addDays(k, n) { const d = k2d(k); d.setUTCDate(d.getUTCDate() + n); return d2k(d); }
+function dow(k) { return k2d(k).getUTCDay(); }
+function fmt(k, o) { return k2d(k).toLocaleDateString('bn-BD', Object.assign({ timeZone: 'UTC' }, o)); }
+function longDate(k) { return fmt(k, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }); }
+function shortDate(k) { return fmt(k, { day: 'numeric', month: 'short' }); }
+function bnNum(n) { return String(n).replace(/\d/g, function (d) { return '০১২৩৪৫৬৭৮৯'[d]; }); }
+function dhakaToday() {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Dhaka', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+}
+function todayKey() { return S.boot ? S.boot.today : dhakaToday(); }
+function relLabel(k) {
+  const t = todayKey();
+  if (k === t) return 'আজ';
+  if (k === addDays(t, 1)) return 'আগামীকাল';
+  if (k === addDays(t, -1)) return 'গতকাল';
+  return fmt(k, { weekday: 'long' });
+}
+function isOff(k) { return !!S.boot && (S.boot.offDays.indexOf(dow(k)) !== -1 || !!S.holidaySet[k]); }
+function weekStartOf(k) { return addDays(k, -((dow(k) + 1) % 7)); }   // শনিবার
+function pct(o) { return o && o.t ? Math.round(o.d / o.t * 100) : 0; }
+function cc(c) { return CAT[c] || '#64748B'; }
+function timeText(i) { return i.start ? (i.end ? i.start + '–' + i.end : i.start) : ''; }
+
+/* ---------- অবস্থা ---------- */
+const S = {
+  boot: null, holidaySet: {}, tab: 'tasks', mode: 'day',
+  date: dhakaToday(), stripStart: addDays(dhakaToday(), -3), weekStart: weekStartOf(dhakaToday()),
+  q: '', filter: 'all', items: [], counts: {}, overdue: 0, doneOpen: false,
+  loading: true, error: null, loadedAt: 0, stale: false, seq: 0, refreshing: false,
+  templates: null, insights: null, holidays: null, viewKey: ''
+};
+const busy = {};
+let F = null;   // খোলা কাজের ফর্ম
+let T = null;   // খোলা রুটিনের ফর্ম
+
+/* ---------- সার্ভার কল ----------
+ * লগইন টোকেন (AUTH) আর callServer() <head>-এ। টোকেন সার্ভার নিজেই
+ * api* ফাংশনের প্রথম প্যারামিটারে বসায়, তাই এখানে শুধু বাকি আর্গুমেন্ট। */
+function api(fn) {
+  const args = Array.prototype.slice.call(arguments, 1);
+  return callServer(fn, args).catch(function (err) {
+    // সেশনের মেয়াদ শেষ বা বাতিল — লগইন পাতায় পাঠাই
+    if (/AUTH_REQUIRED/.test(err.message) && S.boot) { setAuth(''); showLogin(); }
+    throw err;
+  });
+}
+
+function listParams() {
+  if (S.mode === 'week')    return { mode: 'range', from: S.weekStart, to: addDays(S.weekStart, 6) };
+  if (S.mode === 'overdue') return { mode: 'overdue' };
+  if (S.mode === 'search')  return { mode: 'search', q: S.q };
+  return { mode: 'day', date: S.date, stripFrom: S.stripStart, stripTo: addDays(S.stripStart, 13) };
+}
+
+function applyList(res) {
+  S.items = res.items || [];
+  if (S.mode === 'day') S.counts = res.counts || {};
+  S.overdue = res.overdue || 0;
+  S.loading = false; S.error = null; S.loadedAt = Date.now(); S.stale = false;
+
+  // মাঝরাত পার হলে "আজ" বদলে যায়
+  if (S.boot && res.today && res.today !== S.boot.today) {
+    const wasToday = S.date === S.boot.today;
+    S.boot.today = res.today;
+    if (wasToday && S.mode === 'day') { S.date = res.today; S.stripStart = addDays(res.today, -3); loadList(); return; }
+  }
+  if (S.filter !== 'all' && S.filter !== 'must' &&
+      !S.items.some(function (i) { return i.category === S.filter; })) S.filter = 'all';
+  if (S.tab === 'tasks') { renderHero(); fillTasks(); }
+}
+
+async function loadList(silent) {
+  const seq = ++S.seq;
+  if (S.mode === 'search' && !S.q.trim()) {
+    S.items = []; S.loading = false; S.error = null;
+    if (S.tab === 'tasks') { renderHero(); fillTasks(); }
+    return;
+  }
+  if (!silent) { S.loading = true; if (S.tab === 'tasks') { renderHero(); fillTasks(); } }
+  try {
+    const res = await api('apiList', listParams());
+    if (seq === S.seq) applyList(res);
+  } catch (e) {
+    if (seq !== S.seq) return;
+    S.loading = false; S.error = e.message;
+    if (S.tab === 'tasks') { renderHero(); fillTasks(); }
+  }
+}
+
+let reloadTimer = null;
+function scheduleReload() {
+  clearTimeout(reloadTimer);
+  reloadTimer = setTimeout(function () {
+    if (Object.keys(busy).some(function (k) { return busy[k]; })) return scheduleReload();
+    loadList(true);
+  }, 1200);
+}
+
+/* ---------- রেন্ডার ---------- */
+function render() {
+  if (S.login) return;   // লগইন পাতা খোলা থাকলে পেছনের কোনো লোড সেটা মুছে দেবে না
+  renderHero(); renderNav(); renderView();
+}
+
+function ring(p, size, stroke, onHero) {
+  const r = (size - stroke) / 2, c = 2 * Math.PI * r, off = c * (1 - p / 100), m = size / 2;
+  return '<svg class="ring" width="' + size + '" height="' + size + '" viewBox="0 0 ' + size + ' ' + size + '">' +
+    '<circle cx="' + m + '" cy="' + m + '" r="' + r + '" fill="none" stroke="' + (onHero ? 'rgba(255,255,255,.2)' : 'var(--surface-3)') + '" stroke-width="' + stroke + '"/>' +
+    '<circle cx="' + m + '" cy="' + m + '" r="' + r + '" fill="none" stroke="' + (onHero ? '#fff' : 'var(--brand)') + '" stroke-width="' + stroke + '" ' +
+    'stroke-linecap="round" stroke-dasharray="' + c + '" stroke-dashoffset="' + off + '" transform="rotate(-90 ' + m + ' ' + m + ')"/></svg>';
+}
+
+function renderHero() {
+  if (S.login) return;
+  let body = '';
+  if (S.tab === 'tasks') {
+    const total = S.items.length;
+    const done = S.items.filter(function (i) { return i.done; }).length;
+    const p = total ? Math.round(done / total * 100) : 0;
+    const n = function (v) { return S.loading ? '–' : v; };
+    let label;
+    if (S.mode === 'day') label = '<span class="pill-rel">' + esc(relLabel(S.date)) + '</span>' + esc(longDate(S.date));
+    else if (S.mode === 'week') label = '<span class="pill-rel">সপ্তাহ</span>' + esc(shortDate(S.weekStart)) + ' – ' + esc(fmt(addDays(S.weekStart, 6), { day: 'numeric', month: 'long' }));
+    else if (S.mode === 'overdue') label = '<span class="pill-rel">বকেয়া</span>আগের ৬০ দিনের অসমাপ্ত কাজ';
+    else label = '<span class="pill-rel">খুঁজুন</span>সব কাজের মধ্যে';
+
+    const modes = [['day', 'দিন'], ['week', 'সপ্তাহ'], ['overdue', 'বকেয়া'], ['search', 'খুঁজুন']];
+    body =
+      '<div class="hero-date">' + label + '</div>' +
+      '<div class="hero-stats"><div class="ringwrap">' + ring(S.loading ? 0 : p, 60, 7, true) + '<b>' + n(p + '%') + '</b></div>' +
+      '<div class="hs"><div><b>' + n(total) + '</b><span>মোট</span></div><div><b>' + n(done) + '</b><span>Done</span></div>' +
+      '<div><b>' + n(total - done) + '</b><span>বাকি</span></div></div></div>' +
+      '<div class="modes">' + modes.map(function (m) {
+        return '<button class="' + (S.mode === m[0] ? 'on' : '') + '" data-act="mode" data-v="' + m[0] + '">' + m[1] +
+          (m[0] === 'overdue' && S.overdue ? '<span class="badge">' + S.overdue + '</span>' : '') + '</button>';
+      }).join('') + '</div>';
+  } else {
+    const t = {
+      routine:  ['রুটিন', 'নিয়মিত কাজ — নিজে থেকেই তৈরি হয়'],
+      insights: ['রিপোর্ট', 'অগ্রগতি, প্রবণতা আর রিপোর্ট পাঠানো'],
+      more:     ['আরও', 'ছুটির দিন, সিঙ্ক ও টুলস']
+    }[S.tab];
+    body = '<div class="hero-sub"><b>' + t[0] + '</b><span>' + t[1] + '</span></div>';
+  }
+  $('#hero').innerHTML =
+    '<div class="hero-top">' + brandHead() +
+    '<button class="hbtn' + (S.refreshing ? ' spin' : '') + '" data-act="refresh" aria-label="রিফ্রেশ">' + ic('refresh') + '</button></div>' + body;
+}
+
+// সব পাতার উপরে — logo, প্রতিষ্ঠানের নাম, অ্যাপের নাম আর কার To-Do (logo না এলে শুধু লেখা)
+function brandHead() {
+  return '<div class="brand">' +
+    (ORG_LOGO ? '<img class="brand-logo" src="' + ORG_LOGO + '" alt="logo" onerror="this.remove()">' : '') +
+    '<div class="brand-txt"><b>' + esc(ORG_NAME) + '</b>' +
+    '<div class="brand-sub"><span class="app">TO-DO LIST</span>' +
+    '<span class="owner"><i>' + ic('user', 11) + '</i>' + esc(OWNER_NAME) + '</span></div></div></div>';
+}
+
+function renderNav() {
+  const tabs = [['tasks', 'কাজ', 'list'], ['routine', 'রুটিন', 'repeat'], ['insights', 'রিপোর্ট', 'chart'], ['more', 'আরও', 'grid']];
+  $('#nav').innerHTML = tabs.map(function (t) {
+    return '<button class="' + (S.tab === t[0] ? 'on' : '') + '" data-act="tab" data-v="' + t[0] + '"><span class="pip">' + ic(t[2], 20) + '</span>' + t[1] + '</button>';
+  }).join('');
+  const fab = $('#fab');
+  fab.innerHTML = ic('plus', 26);
+  fab.style.display = (S.tab === 'tasks' || S.tab === 'routine') ? '' : 'none';
+}
+
+function renderView() {
+  const key = S.tab + '|' + (S.tab === 'tasks' ? S.mode : '');
+  if (S.tab === 'tasks') {
+    if (S.viewKey !== key) { S.viewKey = key; $('#view').innerHTML = tasksFrame(); }
+    fillTasks();
+  } else {
+    S.viewKey = key;
+    if (S.tab === 'routine') fillRoutine();
+    else if (S.tab === 'insights') fillInsights();
+    else fillMore();
+  }
+}
+
+function skel(n) { let h = ''; for (let i = 0; i < n; i++) h += '<div class="sk"></div>'; return h; }
+
+function emptyBox(glyph, t1, t2, extra) {
+  return '<div class="empty"><div class="g">' + glyph + '</div><div class="t1">' + t1 + '</div>' +
+         (t2 ? '<div class="t2">' + t2 + '</div>' : '') + (extra || '') + '</div>';
+}
+
+/* ---------- কাজের পাতা ---------- */
+function tasksFrame() {
+  const quick = S.mode === 'search' ? '' :
+    '<div class="quick"><span class="qi">' + ic('zap', 16) + '</span>' +
+    '<input id="quick" placeholder="kal 3pm Rokomari meeting" autocomplete="off" enterkeyhint="done">' +
+    '<button class="qbtn" data-act="quick-form" aria-label="পূর্ণ ফর্ম">' + ic('sliders') + '</button>' +
+    '<button class="qbtn go" data-act="quick-add" id="addBtn" aria-label="যোগ করুন">' + ic('plus') + '</button></div>';
+  return '<div id="toolbar"></div>' + quick + '<div id="chips" class="chips-row"></div><div id="list"></div>';
+}
+
+function fillTasks() {
+  if (S.login || S.tab !== 'tasks' || !$('#list')) return;
+  fillToolbar(); fillChips(); fillList();
+}
+
+function fillToolbar() {
+  const tb = $('#toolbar');
+  if (S.mode === 'day') {
+    let days = '';
+    for (let d = 0; d < 14; d++) {
+      const k = addDays(S.stripStart, d), c = S.counts[k];
+      const cls = 'day' + (k === S.date ? ' on' : '') + (k === todayKey() ? ' today' : '') + (isOff(k) ? ' off' : '');
+      days += '<button class="' + cls + '" data-act="pick-day" data-k="' + k + '">' +
+        '<span class="dw">' + BN_WEEK[dow(k)] + '</span><span class="dn">' + bnNum(+k.slice(8)) + '</span>' +
+        '<span class="bar' + (c ? '' : ' none') + '"><i style="width:' + (c ? Math.round(c.d / c.t * 100) : 0) + '%"></i></span></button>';
+    }
+    tb.innerHTML = '<div class="strip"><button class="sbtn" data-act="strip-prev" aria-label="আগের সপ্তাহ">' + ic('chevL') + '</button>' +
+      '<div class="days" id="days">' + days + '</div>' +
+      '<button class="sbtn" data-act="strip-next" aria-label="পরের সপ্তাহ">' + ic('chevR') + '</button>' +
+      '<label class="sbtn cal" aria-label="তারিখ বাছুন">' + ic('calendar') + '<input type="date" id="pickDate" value="' + S.date + '"></label></div>';
+    const box = $('#days'), on = box.querySelector('.day.on');
+    if (on) box.scrollLeft = on.offsetLeft - box.offsetLeft - box.clientWidth / 2 + on.clientWidth / 2;
+  } else if (S.mode === 'week') {
+    tb.innerHTML = '<div class="wnav"><button class="sbtn" data-act="week-prev" aria-label="আগের সপ্তাহ">' + ic('chevL') + '</button>' +
+      '<b>' + esc(shortDate(S.weekStart)) + ' – ' + esc(shortDate(addDays(S.weekStart, 6))) + '</b>' +
+      '<button class="sbtn" data-act="week-next" aria-label="পরের সপ্তাহ">' + ic('chevR') + '</button></div>';
+  } else if (S.mode === 'overdue') {
+    tb.innerHTML = '<div class="info">' + ic('alert', 16) + '<span>তারিখ পেরিয়ে যাওয়া অসমাপ্ত কাজ। "আজ" চাপলে কাজটা আজকের তালিকায় চলে আসবে।</span></div>';
+  } else if (!$('#q')) {
+    tb.innerHTML = '<div class="search">' + ic('search') +
+      '<input id="q" type="search" placeholder="কাজ, নোট বা গেস্ট খুঁজুন…" value="' + esc(S.q) + '" autocomplete="off"></div>';
+    setTimeout(function () { const q = $('#q'); if (q) q.focus(); }, 60);
+  }
+}
+
+function fillChips() {
+  const box = $('#chips');
+  if (!S.items.length) { box.innerHTML = ''; return; }
+  const byCat = {};
+  S.items.forEach(function (i) { byCat[i.category] = (byCat[i.category] || 0) + 1; });
+  const must = S.items.filter(function (i) { return i.priority === 'Must'; }).length;
+  const chip = function (v, label, n, color) {
+    return '<button class="fchip' + (S.filter === v ? ' on' : '') + '" data-act="filter" data-v="' + esc(v) + '"' +
+      (color ? ' style="--c:' + color + '"' : '') + '>' + (color ? '<span class="dot"></span>' : '') +
+      esc(label) + ' <small>' + n + '</small></button>';
+  };
+  let h = chip('all', 'সব', S.items.length);
+  if (must) h += chip('must', '▲ Must', must, PRI.Must);
+  (S.boot ? S.boot.categories : Object.keys(CAT)).forEach(function (c) {
+    if (byCat[c]) h += chip(c, c, byCat[c], cc(c));
+  });
+  Object.keys(byCat).forEach(function (c) {
+    if (S.boot && S.boot.categories.indexOf(c) === -1) h += chip(c, c, byCat[c], cc(c));
+  });
+  box.innerHTML = h;
+}
+
+function visibleItems() {
+  return S.items.filter(function (i) {
+    if (S.filter === 'all') return true;
+    if (S.filter === 'must') return i.priority === 'Must';
+    return i.category === S.filter;
+  });
+}
+
+function fillList() {
+  const box = $('#list');
+  if (S.loading) { box.innerHTML = skel(4); return; }
+  if (S.error) {
+    box.innerHTML = emptyBox('⚠️', 'লোড ব্যর্থ', esc(S.error), '<button class="btn ghost sm" data-act="refresh">আবার চেষ্টা</button>');
+    return;
+  }
+
+  if (S.mode === 'search') {
+    if (!S.q.trim()) { box.innerHTML = emptyBox('🔎', 'খুঁজুন', 'কাজের নাম, নোট, গেস্ট বা ক্যাটাগরি লিখুন'); return; }
+    const vis = visibleItems();
+    box.innerHTML = vis.length ? grouped(vis, {}) : emptyBox('🤷', 'কিছু পাওয়া যায়নি', '“' + esc(S.q) + '” দিয়ে কোনো কাজ নেই');
+    return;
+  }
+  if (S.mode === 'overdue') {
+    const vis = visibleItems();
+    box.innerHTML = vis.length ? grouped(vis, { move: true }) : emptyBox('✨', 'কোনো বকেয়া নেই', 'আগের সব কাজ হয় শেষ, নয়তো সামনে সরানো হয়েছে');
+    return;
+  }
+  if (S.mode === 'week') { box.innerHTML = weekList(); return; }
+
+  // দিনের তালিকা
+  if (!S.items.length) {
+    box.innerHTML = emptyBox('🗒️', 'CHILL BOSS', esc(relLabel(S.date)) + ' এখনও কোন কাজ নেই');
+    return;
+  }
+  const vis = visibleItems();
+  if (!vis.length) { box.innerHTML = emptyBox('🧐', 'এই ফিল্টারে কিছু নেই', ''); return; }
+
+  const pending = vis.filter(function (i) { return !i.done; });
+  const done    = vis.filter(function (i) { return i.done; });
+  let h = '';
+  if (pending.length) {
+    h += '<div class="sec"><span>বাকি ' + pending.length + '</span><span class="rule"></span></div>' +
+         pending.map(function (i) { return card(i, {}); }).join('');
+  } else {
+    h += emptyBox('🎉', 'CONGRATULATIONS', 'সব কাজ সম্পন্ন হয়েছে');
+  }
+  if (done.length) {
+    h += '<div class="sec tap" data-act="done-sec"><span>সম্পন্ন ' + done.length + '</span><span class="rule"></span>' +
+         '<span class="act">' + (S.doneOpen ? 'Hide' : 'Show') + '</span></div>';
+    if (S.doneOpen) h += done.map(function (i) { return card(i, {}); }).join('');
+  }
+  box.innerHTML = h;
+}
+
+function grouped(items, opts) {
+  const groups = [];
+  let cur = null;
+  items.forEach(function (i) {
+    if (!cur || cur.k !== i.date) { cur = { k: i.date, items: [] }; groups.push(cur); }
+    cur.items.push(i);
+  });
+  return groups.map(function (g) {
+    const left = g.items.filter(function (i) { return !i.done; }).length;
+    return '<div class="sec"><span>' + esc(relLabel(g.k)) + '</span><span class="sub">' + esc(shortDate(g.k)) + '</span>' +
+      '<span class="rule"></span><span class="sub">' + left + '/' + g.items.length + '</span></div>' +
+      g.items.map(function (i) { return card(i, opts); }).join('');
+  }).join('');
+}
+
+function weekList() {
+  const vis = visibleItems();
+  let h = '';
+  for (let d = 0; d < 7; d++) {
+    const k = addDays(S.weekStart, d);
+    const its = vis.filter(function (i) { return i.date === k; });
+    const left = its.filter(function (i) { return !i.done; }).length;
+    h += '<div class="sec"><span>' + esc(relLabel(k)) + '</span><span class="sub">' + esc(shortDate(k)) + '</span>' +
+      (isOff(k) ? '<span class="offtag">ছুটি</span>' : '') + '<span class="rule"></span>' +
+      (its.length ? '<span class="sub">' + left + '/' + its.length + '</span>' : '') +
+      '<button class="add" data-act="add-on" data-k="' + k + '" aria-label="এই দিনে কাজ যোগ">' + ic('plus', 15) + '</button></div>';
+    h += its.length ? its.map(function (i) { return card(i, {}); }).join('') : '<div class="none-day">কোনো কাজ নেই</div>';
+  }
+  return h;
+}
+
+function card(i, opts) {
+  const c = cc(i.category);
+  const stuck = !i.done && S.boot && i.rollover >= S.boot.nudge;
+  const time = timeText(i);
+  let tags = '<span class="tag" style="--t:' + c + '">' + esc(i.category) + '</span>';
+  if (i.priority === 'Must') tags += '<span class="tag" style="--t:' + PRI.Must + '">▲ Must</span>';
+  else if (i.priority === 'Could') tags += '<span class="tag" style="--t:' + PRI.Could + '">▽ Could</span>';
+  if (i.status && i.status !== 'To Do' && i.status !== 'Done') {
+    tags += '<span class="tag" style="--t:' + (STA[i.status] || '#64748B') + '">' + esc(i.status) + '</span>';
+  }
+  if (i.rollover > 0 && !i.done) {
+    tags += '<span class="tag" style="--t:' + (stuck ? 'var(--danger)' : '#64748B') + '">' + ic('flag', 11) + i.rollover + '×</span>';
+  }
+  if (i.guest) {
+    const g = i.guest.split(',');
+    tags += '<span class="tag plain">' + ic('user', 11) + esc(g[0].trim()) + (g.length > 1 ? ' +' + (g.length - 1) : '') + '</span>';
+  }
+  if (i.onCalendar) tags += '<span class="tag plain">' + ic('calendar', 11) + '</span>';
+  if (i.source && !(i.source in SRC)) tags += '<span class="tag plain">' + ic('repeat', 11) + '</span>';
+
+  return '<article class="card' + (i.done ? ' done' : '') + (stuck ? ' stuck' : '') + '" style="--c:' + c + '" data-act="edit" data-row="' + i.row + '">' +
+    '<button class="chk" data-act="toggle" data-row="' + i.row + '" aria-label="' + (i.done ? 'আবার শুরু' : 'সম্পন্ন') + '">' + (i.done ? ic('check', 13) : '') + '</button>' +
+    '<div class="cbody"><div class="row1"><div class="ttl">' + esc(i.task) + '</div>' +
+    (time ? '<div class="tm">' + time + '</div>' : '') + '</div>' +
+    '<div class="tags">' + tags + '</div>' +
+    (i.note ? '<div class="note">' + esc(i.note) + '</div>' : '') + '</div>' +
+    (opts.move ? '<button class="mini" data-act="move" data-row="' + i.row + '">আজ' + ic('chevR', 14) + '</button>' : '') +
+    '</article>';
+}
+
+/* ---------- কাজের ফর্ম ---------- */
+function findItem(row) {
+  row = Number(row);
+  const pools = [S.items];
+  if (S.insights) pools.push(S.insights.stuck, S.insights.upcoming);
+  for (let p = 0; p < pools.length; p++) {
+    const hit = (pools[p] || []).filter(function (x) { return x.row === row; })[0];
+    if (hit) return hit;
+  }
+  return null;
+}
+function refOf(i) { return { row: i.row, task: i.task, date: i.date }; }
+
+function openEditor(item, preset) {
+  if (item) {
+    F = Object.assign({}, item, { ref: refOf(item) });
+  } else {
+    F = Object.assign({
+      ref: null, task: '', category: 'Task', priority: 'Should', status: 'To Do',
+      date: S.mode === 'day' ? S.date : todayKey(), start: '', end: '', note: '', guest: ''
+    }, preset || {});
+  }
+  renderEditor();
+  openSheet();
+  if (!item) setTimeout(function () { const t = $('#fTask'); if (t) t.focus(); }, 280);
+}
+
+function guestHint(cat) {
+  return S.boot.calendarCategories.indexOf(cat) !== -1
+    ? '📅 Google Calendar-এ যাবে — গেস্টরা ইনভাইট পাবেন'
+    : 'গেস্ট ইনভাইট শুধু ' + S.boot.calendarCategories.join(' / ') + '-এ যায়';
+}
+
+function renderEditor() {
+  const isNew = !F.ref;
+  const t = todayKey(), tm = addDays(t, 1), nw = S.boot.nextWorking;
+  const quick = [[t, 'আজ'], [tm, 'আগামীকাল']];
+  if (nw !== tm) quick.push([nw, 'পরের কর্মদিবস']);
+
+  let meta = '';
+  if (!isNew) {
+    const bits = ['উৎস: ' + (F.source in SRC ? SRC[F.source] : 'রুটিন')];
+    if (F.rollover) bits.push(F.rollover + ' বার পিছিয়েছে');
+    if (F.onCalendar) bits.push('📅 ক্যালেন্ডারে আছে');
+    meta = '<div class="meta">' + bits.map(function (b) { return '<span>' + esc(b) + '</span>'; }).join('') + '</div>';
+  }
+
+  $('#sheet').innerHTML =
+    '<div class="grab"></div>' +
+    '<div class="sh-head"><h2>' + (isNew ? 'নতুন কাজ' : 'কাজ এডিট') + '</h2>' +
+    '<button class="x" data-act="close" aria-label="বন্ধ">' + ic('x') + '</button></div>' +
+    '<textarea id="fTask" class="inp ttl-inp" rows="2" placeholder="কী করতে হবে?">' + esc(F.task) + '</textarea>' +
+    '<div class="fld"><div class="lbl">ক্যাটাগরি</div><div class="chips">' +
+      S.boot.categories.map(function (c) {
+        return '<button class="chip' + (F.category === c ? ' on' : '') + '" style="--c:' + cc(c) + '" data-act="f-cat" data-v="' + esc(c) + '"><span class="dot"></span>' + esc(c) + '</button>';
+      }).join('') + '</div></div>' +
+    '<div class="fld"><div class="lbl">প্রায়োরিটি</div><div class="seg">' +
+      S.boot.priorities.map(function (p) {
+        return '<button class="' + (F.priority === p ? 'on' : '') + '" style="--c:' + PRI[p] + '" data-act="f-pri" data-v="' + p + '">' + p + '</button>';
+      }).join('') + '</div></div>' +
+    '<div class="fld"><div class="lbl">তারিখ</div><div class="daterow">' +
+      '<input type="date" id="fDate" class="inp" value="' + F.date + '">' +
+      quick.map(function (q) {
+        return '<button class="chip sm' + (F.date === q[0] ? ' on' : '') + '" data-act="f-date" data-v="' + q[0] + '">' + q[1] + '</button>';
+      }).join('') + '</div></div>' +
+    '<div class="fld"><div class="lbl">সময় <span class="hint">(ঐচ্ছিক)</span></div><div class="timerow">' +
+      '<div class="tin"><input type="time" id="fStart" class="inp" value="' + F.start + '"><button class="clr" data-act="f-clear" data-v="fStart" aria-label="মুছুন">' + ic('x', 13) + '</button></div>' +
+      '<span class="dash">থেকে</span>' +
+      '<div class="tin"><input type="time" id="fEnd" class="inp" value="' + F.end + '"><button class="clr" data-act="f-clear" data-v="fEnd" aria-label="মুছুন">' + ic('x', 13) + '</button></div>' +
+    '</div></div>' +
+    '<div class="fld"><div class="lbl">স্ট্যাটাস</div><div class="chips">' +
+      S.boot.statuses.map(function (s) {
+        return '<button class="chip sm' + (F.status === s ? ' on' : '') + '" style="--c:' + (STA[s] || '#64748B') + '" data-act="f-sta" data-v="' + esc(s) + '">' + esc(s) + '</button>';
+      }).join('') + '</div></div>' +
+    '<div class="fld"><div class="lbl">নোট</div><textarea id="fNote" class="inp" rows="2" placeholder="নোট (কেন Pending/Processing — ঐচ্ছিক)">' + esc(F.note) + '</textarea></div>' +
+    '<div class="fld"><div class="lbl">গেস্ট ইমেইল</div>' +
+      '<input id="fGuest" class="inp" type="text" inputmode="email" autocomplete="off" placeholder="name@gmail.com, …" value="' + esc(F.guest) + '">' +
+      '<div class="hint" id="gHint">' + guestHint(F.category) + '</div></div>' +
+    meta +
+    '<div class="ferr" id="fErr"></div>' +
+    '<div class="sh-act">' +
+      (isNew ? '' :
+        '<button class="btn danger icon" data-act="f-del" aria-label="মুছুন">' + ic('trash') + '</button>' +
+        '<button class="btn ghost icon" data-act="f-copy" aria-label="কপি করে নতুন">' + ic('copy') + '</button>') +
+      '<button class="btn primary grow" data-act="f-save" id="fSave">' + (isNew ? 'যোগ করুন' : 'সেভ করুন') + '</button>' +
+    '</div>';
+}
+
+function readForm() {
+  F.task = $('#fTask').value; F.date = $('#fDate').value || todayKey();
+  F.start = $('#fStart').value; F.end = $('#fEnd').value;
+  F.note = $('#fNote').value; F.guest = $('#fGuest').value;
+}
+
+function pickIn(el, attrAct) {
+  el.parentNode.querySelectorAll('[data-act="' + attrAct + '"]').forEach(function (b) { b.classList.toggle('on', b === el); });
+}
+
+function formError(msg) {
+  const e = $('#fErr');
+  if (!e) return toast(msg);
+  e.textContent = msg; e.classList.toggle('show', !!msg);
+}
+
+async function saveTask(btn) {
+  readForm();
+  if (!F.task.trim()) return formError('কাজের নাম লিখুন।');
+  btn.classList.add('loading'); formError('');
+  try {
+    const it = await api('apiSaveTask', {
+      ref: F.ref, task: F.task, category: F.category, priority: F.priority, status: F.status,
+      date: F.date, start: F.start, end: F.end, note: F.note, guest: F.guest
+    });
+    const wasNew = !F.ref;
+    closeSheet();
+    const where = (S.mode === 'day' && it.date !== S.date) ? ' — ' + relLabel(it.date) + ', ' + shortDate(it.date) : '';
+    toast((wasNew ? 'এন্ট্রি যোগ হয়েছে' : 'সেভ হয়েছে ✓') + where);
+    S.insights = null;
+    loadList(true);
+  } catch (e) {
+    btn.classList.remove('loading');
+    formError(e.message);
+  }
+}
+
+async function deleteTask() {
+  const ok = await ask('কাজটা মুছবেন?', '“' + F.task + '” স্থায়ীভাবে মুছে যাবে। Calendar event থাকলে সেটাও মুছবে।', { ok: 'মুছে ফেলুন', danger: true });
+  if (!ok) return;
+  const ref = F.ref;
+  closeSheet();
+  S.items = S.items.filter(function (x) { return x.row !== ref.row; });
+  renderHero(); fillTasks();
+  try {
+    await api('apiDeleteTask', ref);
+    toast('মুছে ফেলা হয়েছে');
+  } catch (e) { toast('ব্যর্থ: ' + e.message); }
+  S.insights = null;
+  loadList(true);
+}
+
+/* ---------- টিক, সরানো, দ্রুত যোগ ---------- */
+async function toggle(row) {
+  const i = findItem(row);
+  if (!i || busy[row]) return;
+  busy[row] = true;
+  const prev = Object.assign({}, i);
+  const next = i.done ? (S.boot.statuses[0] || 'To Do') : 'Done';
+  i.done = !i.done; i.status = next;
+  const c = S.counts[i.date];
+  if (c) c.d += i.done ? 1 : -1;
+  toast(i.done ? 'সম্পন্ন ✓' : 'আবার শুরুতে ফেরানো হলো');
+  refreshAfterLocalChange();
+  try {
+    Object.assign(i, await api('apiPatchTask', refOf(prev), { status: next }));
+  } catch (e) {
+    Object.assign(i, prev);
+    if (c) c.d += prev.done ? 1 : -1;
+    toast('ব্যর্থ: ' + e.message);
+  }
+  busy[row] = false;
+  refreshAfterLocalChange();
+  S.insights = null;
+  scheduleReload();
+}
+
+function refreshAfterLocalChange() {
+  if (S.tab === 'tasks') { renderHero(); fillTasks(); }
+  else if (S.tab === 'insights' && S.insights) fillInsights();
+}
+
+async function moveToToday(row) {
+  const i = findItem(row);
+  if (!i || busy[row]) return;
+  busy[row] = true;
+  S.items = S.items.filter(function (x) { return x !== i; });
+  S.overdue = Math.max(0, S.overdue - 1);
+  renderHero(); fillTasks();
+  try {
+    await api('apiPatchTask', refOf(i), { date: todayKey() });
+    toast('আজকের তালিকায় আনা হয়েছে');
+  } catch (e) { toast('ব্যর্থ: ' + e.message); }
+  busy[row] = false;
+  scheduleReload();
+}
+
+async function quickAdd() {
+  const el = $('#quick'), btn = $('#addBtn');
+  const text = el.value.trim();
+  if (!text) { el.focus(); return; }
+  btn.disabled = true;
+  try {
+    const it = await api('apiQuickAdd', text);
+    el.value = '';
+    const where = it.date !== S.date ? ' — ' + relLabel(it.date) + ', ' + shortDate(it.date) : '';
+    toast('এন্ট্রি যোগ হয়েছে' + where + (it.start ? ' · ' + it.start : ''));
+    S.insights = null;
+    loadList(true);
+  } catch (e) { toast('ব্যর্থ: ' + e.message); }
+  btn.disabled = false;
+}
+
+/* লেখা থাকলে সেটা বুঝে ফর্ম আগেই ভরে দিই */
+async function quickForm() {
+  const el = $('#quick'), text = el ? el.value.trim() : '';
+  if (!text) return openEditor(null);
+  try {
+    const p = await api('apiParse', text);
+    el.value = '';
+    openEditor(null, p);
+  } catch (e) { openEditor(null, { task: text }); }
+}
+
+/* ---------- রুটিন ---------- */
+function tplWeekdays(days) {
+  return String(days || '').split(',').map(function (s) { return s.trim().toLowerCase(); })
+    .map(function (s) { return WEEK_EN.filter(function (w) { return w.toLowerCase() === s; })[0]; })
+    .filter(Boolean);
+}
+
+function tplSummary(t) {
+  if (t.repeat === 'Weekly') {
+    const w = tplWeekdays(t.days);
+    return 'প্রতি সপ্তাহ · ' + (SAT_FIRST.filter(function (d) { return w.indexOf(WEEK_EN[d]) !== -1; })
+      .map(function (d) { return BN_WEEK[d]; }).join(', ') || '—');
+  }
+  if (t.repeat === 'Monthly') return 'প্রতি মাসের ' + bnNum(t.days || 1) + ' তারিখ';
+  return 'প্রতি কর্মদিবস';
+}
+
+async function loadTemplates() {
+  if (S.loadingTpl) return;
+  S.loadingTpl = true;
+  try { S.templates = await api('apiTemplates'); }
+  catch (e) { S.templates = null; toast('লোড ব্যর্থ: ' + e.message); }
+  S.loadingTpl = false;
+  if (S.tab === 'routine' && S.templates) fillRoutine();
+}
+
+function fillRoutine() {
+  const v = $('#view');
+  if (!S.templates) { v.innerHTML = skel(4); loadTemplates(); return; }
+  const on = S.templates.filter(function (t) { return t.active; }).length;
+  let h = '<div class="rhead"><div><b>' + S.templates.length + '</b> রুটিন · ' + on + ' চালু</div>' +
+    '<button class="btn ghost sm" data-act="tool" data-tool="recurring">' + ic('zap', 15) + ' এখনই তৈরি করো</button></div>';
+  if (!S.templates.length) {
+    h += emptyBox('🔁', 'কোনো রুটিন নেই', 'নিচের + দিয়ে প্রতিদিন, সাপ্তাহিক বা মাসিক কাজ যোগ করুন — প্রতি রাতে নিজে থেকেই তৈরি হবে');
+  } else {
+    h += S.templates.map(function (t) {
+      const time = t.start ? (t.end ? t.start + '–' + t.end : t.start) : '';
+      return '<article class="card' + (t.active ? '' : ' done') + '" style="--c:' + cc(t.category) + '" data-act="tpl-edit" data-id="' + esc(t.id) + '">' +
+        '<div class="cbody"><div class="row1"><div class="ttl" style="text-decoration:none">' + esc(t.task) + '</div>' +
+        (time ? '<div class="tm">' + time + '</div>' : '') + '</div>' +
+        '<div class="tags"><span class="tag" style="--t:#7C3AED">' + ic('repeat', 11) + esc(tplSummary(t)) + '</span>' +
+        '<span class="tag" style="--t:' + cc(t.category) + '">' + esc(t.category) + '</span>' +
+        (t.priority === 'Must' ? '<span class="tag" style="--t:' + PRI.Must + '">▲ Must</span>' : '') + '</div></div>' +
+        '<button class="sw' + (t.active ? ' on' : '') + '" data-act="tpl-active" data-id="' + esc(t.id) + '" aria-label="চালু/বন্ধ" style="align-self:center"></button>' +
+        '</article>';
+    }).join('');
+  }
+  h += '<div class="foot">শুক্রবার ও ছুটির দিনে রুটিনের কাজ তৈরি হয় না। মাসিক কাজের দিন ছুটি হলে পরের কর্মদিবসে আসে।</div>';
+  v.innerHTML = h;
+}
+
+function tplPayload(t, over) {
+  return Object.assign({
+    id: t.id, task: t.task, category: t.category, priority: t.priority, repeat: t.repeat,
+    weekdays: t.weekdays || tplWeekdays(t.days), monthDay: t.monthDay || Number(t.days) || 1,
+    start: t.start, end: t.end, active: t.active
+  }, over || {});
+}
+
+async function toggleTemplate(id) {
+  const t = (S.templates || []).filter(function (x) { return x.id === id; })[0];
+  if (!t) return;
+  t.active = !t.active;
+  fillRoutine();
+  try {
+    S.templates = await api('apiSaveTemplate', tplPayload(t));
+    toast(t.active ? 'রুটিন চালু' : 'রুটিন বন্ধ');
+  } catch (e) { t.active = !t.active; toast('ব্যর্থ: ' + e.message); }
+  if (S.tab === 'routine') fillRoutine();
+}
+
+function openTplEditor(t) {
+  T = t ? {
+    id: t.id, task: t.task, category: t.category, priority: t.priority, repeat: t.repeat,
+    weekdays: tplWeekdays(t.days), monthDay: t.repeat === 'Monthly' ? (Number(t.days) || 1) : 1,
+    start: t.start, end: t.end, active: t.active
+  } : {
+    id: '', task: '', category: 'Task', priority: 'Should', repeat: 'Daily',
+    weekdays: [], monthDay: 1, start: '', end: '', active: true
+  };
+  renderTplEditor();
+  openSheet();
+  if (!t) setTimeout(function () { const x = $('#tTask'); if (x) x.focus(); }, 280);
+}
+
+function renderTplEditor() {
+  const isNew = !T.id;
+  const rep = { Daily: 'প্রতিদিন', Weekly: 'সাপ্তাহিক', Monthly: 'মাসিক' };
+  let when = '';
+  if (T.repeat === 'Weekly') {
+    when = '<div class="fld"><div class="lbl">কোন কোন দিন</div><div class="chips">' +
+      SAT_FIRST.map(function (d) {
+        const w = WEEK_EN[d];
+        return '<button class="chip sm' + (T.weekdays.indexOf(w) !== -1 ? ' on' : '') + '" data-act="t-wd" data-v="' + w + '"' +
+          (S.boot.offDays.indexOf(d) !== -1 ? ' style="--c:var(--danger)"' : '') + '>' + BN_WEEK[d] + '</button>';
+      }).join('') + '</div></div>';
+  } else if (T.repeat === 'Monthly') {
+    when = '<div class="fld"><div class="lbl">মাসের কত তারিখ</div>' +
+      '<input id="tDay" class="inp" type="number" min="1" max="31" inputmode="numeric" value="' + T.monthDay + '">' +
+      '<div class="hint">৩১ দিলে ছোট মাসে শেষ দিনে তৈরি হবে</div></div>';
+  }
+
+  $('#sheet').innerHTML =
+    '<div class="grab"></div>' +
+    '<div class="sh-head"><h2>' + (isNew ? 'নতুন রুটিন' : 'রুটিন এডিট') + '</h2>' +
+    '<button class="x" data-act="close" aria-label="বন্ধ">' + ic('x') + '</button></div>' +
+    '<input id="tTask" class="inp ttl-inp" placeholder="কী কাজ? যেমন: Daily sales report" value="' + esc(T.task) + '">' +
+    '<div class="fld"><div class="lbl">কত দিন পরপর</div><div class="seg">' +
+      Object.keys(rep).map(function (r) {
+        return '<button class="' + (T.repeat === r ? 'on' : '') + '" style="--c:#7C3AED" data-act="t-rep" data-v="' + r + '">' + rep[r] + '</button>';
+      }).join('') + '</div></div>' +
+    when +
+    '<div class="fld"><div class="lbl">ক্যাটাগরি</div><div class="chips">' +
+      S.boot.categories.map(function (c) {
+        return '<button class="chip sm' + (T.category === c ? ' on' : '') + '" style="--c:' + cc(c) + '" data-act="t-cat" data-v="' + esc(c) + '"><span class="dot"></span>' + esc(c) + '</button>';
+      }).join('') + '</div></div>' +
+    '<div class="fld"><div class="lbl">প্রায়োরিটি</div><div class="seg">' +
+      S.boot.priorities.map(function (p) {
+        return '<button class="' + (T.priority === p ? 'on' : '') + '" style="--c:' + PRI[p] + '" data-act="t-pri" data-v="' + p + '">' + p + '</button>';
+      }).join('') + '</div></div>' +
+    '<div class="fld"><div class="lbl">সময় <span class="hint">(ঐচ্ছিক)</span></div><div class="timerow">' +
+      '<div class="tin"><input type="time" id="tStart" class="inp" value="' + T.start + '"><button class="clr" data-act="f-clear" data-v="tStart" aria-label="মুছুন">' + ic('x', 13) + '</button></div>' +
+      '<span class="dash">থেকে</span>' +
+      '<div class="tin"><input type="time" id="tEnd" class="inp" value="' + T.end + '"><button class="clr" data-act="f-clear" data-v="tEnd" aria-label="মুছুন">' + ic('x', 13) + '</button></div>' +
+    '</div></div>' +
+    '<div class="fld swrow"><div><div class="lbl" style="margin:0">চালু</div><div class="hint" style="margin:0">বন্ধ রাখলে নতুন কাজ তৈরি হবে না</div></div>' +
+      '<button class="sw' + (T.active ? ' on' : '') + '" data-act="t-act" aria-label="চালু/বন্ধ"></button></div>' +
+    '<div class="ferr" id="fErr"></div>' +
+    '<div class="sh-act">' +
+      (isNew ? '' : '<button class="btn danger icon" data-act="tpl-del" aria-label="মুছুন">' + ic('trash') + '</button>') +
+      '<button class="btn primary grow" data-act="tpl-save">' + (isNew ? 'রুটিন যোগ করুন' : 'সেভ করুন') + '</button>' +
+    '</div>';
+}
+
+function readTplForm() {
+  T.task = $('#tTask').value;
+  T.start = $('#tStart').value; T.end = $('#tEnd').value;
+  const d = $('#tDay');
+  if (d) T.monthDay = Number(d.value) || 1;
+}
+
+async function saveTemplate(btn) {
+  readTplForm();
+  if (!T.task.trim()) return formError('রুটিনের নাম লিখুন।');
+  btn.classList.add('loading'); formError('');
+  try {
+    S.templates = await api('apiSaveTemplate', tplPayload(T));
+    const wasNew = !T.id;
+    closeSheet();
+    toast(wasNew ? 'রুটিন যোগ হয়েছে — রাতে কাজ তৈরি হবে' : 'রুটিন সেভ হয়েছে ✓');
+    fillRoutine();
+  } catch (e) { btn.classList.remove('loading'); formError(e.message); }
+}
+
+async function deleteTemplate() {
+  const ok = await ask('রুটিন মুছবেন?', '“' + T.task + '” আর তৈরি হবে না। আগে তৈরি হওয়া কাজগুলো থেকে যাবে।', { ok: 'মুছে ফেলুন', danger: true });
+  if (!ok) return;
+  const id = T.id;
+  closeSheet();
+  try { S.templates = await api('apiDeleteTemplate', id); toast('রুটিন মুছে ফেলা হয়েছে'); }
+  catch (e) { toast('ব্যর্থ: ' + e.message); }
+  fillRoutine();
+}
+
+/* ---------- রিপোর্ট ---------- */
+async function loadInsights() {
+  if (S.loadingIns) return;
+  S.loadingIns = true;
+  try { S.insights = await api('apiInsights'); }
+  catch (e) { S.insights = null; toast('লোড ব্যর্থ: ' + e.message); }
+  S.loadingIns = false;
+  if (S.tab === 'insights' && S.insights) fillInsights();
+}
+
+function bar(name, o, color) {
+  return '<div class="b"><div class="bh"><b>' + esc(name) + '</b><span>' + o.d + '/' + o.t + ' · ' + pct(o) + '%</span></div>' +
+    '<div class="track"><i style="width:' + pct(o) + '%;--c:' + color + '"></i></div></div>';
+}
+
+function trendChart(list) {
+  if (!list.length) return '<div class="none-day">এখনো ডেটা নেই — প্রতি রাতে History-তে যোগ হয়</div>';
+  const max = Math.max.apply(null, list.map(function (h) { return h.total; }).concat([1]));
+  return '<div class="trend">' + list.map(function (h) {
+    const tot = Math.round(h.total / max * 100), dn = h.total ? Math.round(h.done / h.total * 100) : 0;
+    return '<div class="tcol" title="' + esc(h.dateKey + ' — ' + h.done + '/' + h.total) + '">' +
+      '<div class="tbar"><div class="tot" style="height:' + tot + '%"><i style="height:' + dn + '%"></i></div></div>' +
+      '<div class="tlbl' + (h.dateKey === todayKey() ? ' now' : '') + '">' + bnNum(+h.dateKey.slice(8)) + '<br>' + BN_WEEK[dow(h.dateKey)].slice(0, 1) + '</div></div>';
+  }).join('') + '</div>' +
+  '<div class="legend"><span><i style="background:var(--hero-2)"></i>সম্পন্ন</span><span><i style="background:var(--surface-3)"></i>মোট</span></div>';
+}
+
+function miniRow(i) {
+  const time = timeText(i);
+  return '<div class="lrow" style="--c:' + cc(i.category) + '" data-act="edit" data-row="' + i.row + '">' +
+    '<span class="dot"></span><span class="lt">' + esc(i.task) + '</span>' +
+    '<span class="ls">' + esc(relLabel(i.date)) + (time ? ' · ' + time : '') + (i.rollover ? ' · ' + i.rollover + '×' : '') + '</span></div>';
+}
+
+function toolBtn(name) {
+  const t = TOOLS[name];
+  return '<button class="tool" style="--c:' + t[3] + '" data-act="tool" data-tool="' + name + '">' +
+    '<span class="ti">' + ic(t[2], 17) + '</span><span style="min-width:0"><b>' + t[0] + '</b><span>' + t[1] + '</span></span></button>';
+}
+
+function fillInsights() {
+  const v = $('#view');
+  if (!S.insights) { v.innerHTML = '<div class="sk" style="height:110px"></div>' + skel(3); loadInsights(); return; }
+  const I = S.insights, tp = pct(I.today);
+  v.innerHTML =
+    '<div class="panel today-card"><div class="tc-ring">' + ring(tp, 84, 9, false) + '<b>' + tp + '%</b></div>' +
+      '<div><div class="k">আজকের অগ্রগতি</div><div class="v">' + I.today.d + ' / ' + I.today.t + '</div>' +
+      '<div class="s">' + (I.today.t - I.today.d) + ' টা কাজ বাকি</div></div></div>' +
+    '<div class="tiles">' +
+      '<div class="tile" style="--c:#6366F1"><div class="k">সাপ্তাহিক</div><div class="v">' + pct(I.week) + '%</div><div class="s">' + I.week.d + '/' + I.week.t + ' সম্পন্ন</div></div>' +
+      '<div class="tile" style="--c:#059669"><div class="k">মাসিক</div><div class="v">' + pct(I.month) + '%</div><div class="s">' + I.month.d + '/' + I.month.t + ' সম্পন্ন</div></div>' +
+    '</div>' +
+    '<div class="panel"><h3>' + ic('chart') + ' প্রতিদিনের অগ্রগতি<small>শেষ ১৪ কর্মদিবস</small></h3>' + trendChart(I.trend) + '</div>' +
+    '<div class="panel"><h3>' + ic('flag') + ' প্রায়োরিটি অনুযায়ী<small>৩০ দিন</small></h3><div class="bars">' +
+      I.priority.map(function (p) { return bar(p.name, p, PRI[p.name] || '#64748B'); }).join('') + '</div></div>' +
+    (I.category.length ? '<div class="panel"><h3>' + ic('grid') + ' ক্যাটাগরি অনুযায়ী<small>৩০ দিন</small></h3><div class="bars">' +
+      I.category.map(function (c) { return bar(c.name, c, cc(c.name)); }).join('') + '</div></div>' : '') +
+    (I.upcoming.length ? '<div class="panel"><h3>' + ic('calendar') + ' সামনের ৭ দিন<small>Meeting / Event / Call</small></h3>' + I.upcoming.map(miniRow).join('') + '</div>' : '') +
+    (I.stuck.length ? '<div class="panel"><h3>' + ic('alert') + ' বারবার পিছিয়ে যাচ্ছে<small>আজ করুন বা বাদ দিন</small></h3>' + I.stuck.map(miniRow).join('') + '</div>' : '') +
+    '<div class="panel"><h3>' + ic('send') + ' রিপোর্ট</h3>' +
+      '<div class="prow"><input type="date" id="printDate" class="inp" value="' + S.date + '">' +
+      '<button class="btn ghost" data-act="print">' + ic('printer', 16) + ' প্রিন্ট</button></div>' +
+      '<div class="tools">' + toolBtn('eod') + toolBtn('weekly') + toolBtn('sheetReport') + '</div></div>';
+}
+
+/* ---------- আরও: ছুটি, টুলস, Telegram ---------- */
+async function loadHolidays() {
+  if (S.loadingHol) return;
+  S.loadingHol = true;
+  try { setHolidays(await api('apiHolidays')); }
+  catch (e) { toast('লোড ব্যর্থ: ' + e.message); }
+  S.loadingHol = false;
+  if (S.tab === 'more' && S.holidays) fillMore();
+}
+
+function setHolidays(list) {
+  S.holidays = list;
+  S.holidaySet = {};
+  list.forEach(function (h) { S.holidaySet[h.date] = true; });
+}
+
+function fillMore() {
+  const v = $('#view');
+  if (!S.holidays) { v.innerHTML = skel(5); loadHolidays(); return; }
+  const t = todayKey();
+  const upcoming = S.holidays.filter(function (h) { return h.date >= t; });
+  const past = S.holidays.filter(function (h) { return h.date < t; }).slice(-3);
+  const offNames = S.boot.offDays.map(function (d) { return BN_WEEK_FULL[d]; }).join(', ');
+  const hrow = function (h, isPast) {
+    return '<div class="hrow' + (isPast ? ' past' : '') + '"><div class="hd"><b>' + bnNum(+h.date.slice(8)) + '</b>' +
+      '<span>' + esc(fmt(h.date, { month: 'short' })) + '</span></div>' +
+      '<div class="hx"><b>' + esc(h.reason || 'ছুটি') + '</b><span>' + esc(fmt(h.date, { weekday: 'long', year: 'numeric' })) + '</span></div>' +
+      '<button class="x" data-act="hol-del" data-k="' + h.date + '" aria-label="মুছুন">' + ic('trash', 15) + '</button></div>';
+  };
+
+  v.innerHTML =
+    '<div class="panel"><h3>' + ic('sun') + ' ছুটির দিন<small>সাপ্তাহিক: ' + esc(offNames) + '</small></h3>' +
+      (upcoming.length || past.length
+        ? past.map(function (h) { return hrow(h, true); }).join('') + upcoming.map(function (h) { return hrow(h, false); }).join('')
+        : '<div class="none-day">কোনো ছুটি যোগ করা নেই</div>') +
+      '<div class="addrow"><input type="date" id="hDate" class="inp" value="' + t + '">' +
+      '<input id="hReason" class="inp" placeholder="কারণ (ঐচ্ছিক)">' +
+      '<button class="btn primary" data-act="hol-add" aria-label="যোগ করুন">' + ic('plus') + '</button></div>' +
+      '<div class="hint">ছুটির দিনে রুটিন তৈরি হয় না, Rollover ছুটি টপকে পরের কর্মদিবসে যায়।</div></div>' +
+    '<div class="panel"><h3>' + ic('refresh') + ' সিঙ্ক</h3><div class="tools">' +
+      toolBtn('calendar') + toolBtn('reconcile') + toolBtn('tasksync') + toolBtn('recurring') + '</div></div>' +
+    '<div class="panel"><h3>' + ic('shield') + ' রক্ষণাবেক্ষণ</h3><div class="tools">' +
+      toolBtn('dedupe') + toolBtn('sort') + toolBtn('archive') + toolBtn('views') + toolBtn('health') + toolBtn('telegram') + '</div></div>' +
+    '<div class="panel"><h3>' + ic('user') + ' To-Do-র মালিক<small>উপরে আর রিপোর্টে দেখায়</small></h3>' +
+      '<div class="prow"><input id="ownerName" class="inp" maxlength="60" autocomplete="off" placeholder="পুরো নাম" value="' + esc(OWNER_NAME) + '">' +
+      '<button class="btn ghost" data-act="owner-save">সেভ</button></div>' +
+      '<div class="hint">উপরের সোনালি নাম, প্রিন্ট, Report শিট আর ইমেইলের PDF-এ এই নাম বসে।</div></div>' +
+    '<div class="panel"><h3>' + ic('key') + ' Telegram<small>' + (S.boot.hasTelegram ? 'টোকেন সেট করা আছে ✅' : 'টোকেন নেই') + '</small></h3>' +
+      '<div class="prow"><input id="tgTok" class="inp" type="password" autocomplete="off" placeholder="BotFather থেকে পাওয়া BOT_TOKEN">' +
+      '<button class="btn ghost" data-act="tg-save">সেভ</button></div>' +
+      '<div class="hint">টোকেন কোডে থাকে না — Script Properties-এ সেভ হয়।</div></div>' +
+    securityPanel() +
+    '<div class="panel"><h3>' + ic('user') + ' অ্যাকাউন্ট<small>' + (S.boot.user.owner ? 'মালিক' : 'অনুমতিপ্রাপ্ত') + '</small></h3>' +
+      '<div class="swrow"><span style="font-weight:600;overflow:hidden;text-overflow:ellipsis">' + esc(S.boot.user.email) + '</span>' +
+      (AUTH ? '<button class="btn ghost sm" data-act="logout">লগআউট</button>' : '') + '</div></div>' +
+    '<div class="panel"><a class="link" href="' + esc(S.boot.sheetUrl) + '" target="_blank" rel="noopener">' +
+      ic('sheet') + '<span>Google Sheet খুলুন (ব্যাকএন্ড)</span>' + ic('ext', 16) + '</a></div>' +
+    '<div class="foot">Smart To-Do · v8.0</div>';
+}
+
+/* ---------- নিরাপত্তা (শুধু মালিক দেখেন) ----------
+ * অনুমতির তালিকা (কার ইমেইলে কোড যায়) আর লগইন থাকা ডিভাইস। */
+async function loadSecurity() {
+  if (S.loadingSec) return;
+  S.loadingSec = true;
+  try { S.security = await api('apiSecurity'); }
+  catch (e) { S.security = { error: e.message }; }
+  S.loadingSec = false;
+  if (S.tab === 'more') fillMore();
+}
+
+function agoText(ms) {
+  if (!ms) return 'অনেক আগে';
+  const m = Math.round((Date.now() - ms) / 60000);
+  if (m < 15) return 'এখন সক্রিয়';   // সার্ভার ১০ মিনিটে একবার সময় লেখে
+  if (m < 60) return bnNum(m) + ' মিনিট আগে';
+  const h = Math.round(m / 60);
+  if (h < 24) return bnNum(h) + ' ঘণ্টা আগে';
+  return bnNum(Math.round(h / 24)) + ' দিন আগে';
+}
+
+/* লগইনের সময় সার্ভারে যায় — ডিভাইসের তালিকায় চেনার জন্য */
+function deviceName() {
+  const u = navigator.userAgent;
+  const os = /Android/i.test(u) ? 'Android' : /iPhone|iPad|iPod/i.test(u) ? 'iPhone/iPad' :
+             /Windows/i.test(u) ? 'Windows' : /Mac OS X/i.test(u) ? 'Mac' : /Linux/i.test(u) ? 'Linux' : 'অজানা';
+  const br = /Edg\//.test(u) ? 'Edge' : /OPR\//.test(u) ? 'Opera' : /SamsungBrowser/.test(u) ? 'Samsung Internet' :
+             /Chrome\//.test(u) ? 'Chrome' : /Firefox\//.test(u) ? 'Firefox' : /Safari\//.test(u) ? 'Safari' : 'ব্রাউজার';
+  return os + ' · ' + br + (/github\.io$/.test(location.hostname) ? ' · ওয়েবসাইট' : ' · Apps Script লিংক');
+}
+
+function securityPanel() {
+  if (!S.boot.user.owner) return '';
+  const X = S.security;
+  const head = '<div class="panel"><h3>' + ic('shield') + ' নিরাপত্তা<small>শুধু আপনি দেখছেন</small></h3>';
+  if (!X) { loadSecurity(); return head + '<div class="sk" style="height:120px"></div></div>'; }
+  if (X.error) {
+    return head + '<div class="none-day">লোড হয়নি — ' + esc(X.error) + '</div>' +
+      '<button class="btn ghost sm" data-act="sec-reload">আবার চেষ্টা</button></div>';
+  }
+
+  const urow = function (e, isOwner) {
+    return '<div class="srow"><span class="si">' + ic(isOwner ? 'key' : 'user', 16) + '</span>' +
+      '<div class="sx"><b>' + esc(e) + '</b><span>' + (isOwner ? 'মালিক — সবসময় ঢুকতে পারেন' : 'অনুমতিপ্রাপ্ত') + '</span></div>' +
+      (isOwner ? '' : '<button class="x" data-act="sec-user-del" data-e="' + esc(e) + '" aria-label="অনুমতি বাতিল">' + ic('trash', 15) + '</button>') +
+      '</div>';
+  };
+  const drow = function (s) {
+    return '<div class="srow"><span class="si" style="--c:' + (s.current ? 'var(--ok)' : '#64748B') + '">' + ic('shield', 16) + '</span>' +
+      '<div class="sx"><b>' + esc(s.device) + (s.current ? '<em class="me">এই ডিভাইস</em>' : '') + '</b>' +
+      '<span>' + esc(s.email) + ' · ' + agoText(s.last) + '</span></div>' +
+      (s.current ? '' : '<button class="x" data-act="sec-sess-del" data-id="' + esc(s.id) + '" aria-label="বের করে দিন">' + ic('x', 15) + '</button>') +
+      '</div>';
+  };
+  const others = X.sessions.filter(function (s) { return !s.current; }).length;
+
+  return head +
+    '<div class="sec-h">যাদের ইমেইলে লগইন কোড যায়</div>' +
+    urow(X.owner, true) + X.users.map(function (u) { return urow(u, false); }).join('') +
+    '<div class="addrow two"><input id="secEmail" class="inp" type="email" inputmode="email" autocomplete="off" placeholder="নতুন ইমেইল যোগ করুন">' +
+    '<button class="btn primary" data-act="sec-user-add" aria-label="যোগ করুন">' + ic('plus') + '</button></div>' +
+    '<div class="hint">তালিকার বাইরের কোনো ইমেইলে কোড যায় না — লিংক পেলেও কেউ ঢুকতে পারবে না। ' +
+      'কেউ চেষ্টা করলে বা নতুন লগইন হলে আপনার Telegram-এ (না থাকলে ইমেইলে) খবর যায়।</div>' +
+    '<div class="sec-h">লগইন থাকা ডিভাইস<small>' + bnNum(X.sessions.length) + 'টা</small></div>' +
+    (X.sessions.length ? X.sessions.map(drow).join('') : '<div class="none-day">কোনো ডিভাইস লগইন নেই</div>') +
+    (others ? '<button class="btn danger" style="width:100%;margin-top:10px" data-act="sec-sess-all">' + ic('alert', 16) +
+      ' অন্য সব ডিভাইস থেকে বের করে দাও</button>' : '') +
+    '<div class="hint">একটা ইমেইলে দিনে সর্বোচ্চ ' + bnNum(X.limit) + ' বার কোড চাওয়া যায় — কেউ বারবার চেয়ে ইনবক্স ভরাতে পারবে না।</div></div>';
+}
+
+async function secAddUser(btn) {
+  const e = $('#secEmail').value.trim().toLowerCase();
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)) return toast('ইমেইল ঠিক নেই');
+  btn.classList.add('loading');
+  try { S.security = await api('apiAddUser', e); toast(e + ' যোগ হলো ✅'); fillMore(); }
+  catch (err) { btn.classList.remove('loading'); toast(err.message); }
+}
+
+async function secRemoveUser(e) {
+  if (!(await ask('অনুমতি বাতিল করবেন?', e + ' আর ঢুকতে পারবেন না। যেসব ডিভাইসে লগইন আছে, সেখান থেকেও সাথে সাথে বের হয়ে যাবেন।',
+    { ok: 'বাতিল করুন', danger: true }))) return;
+  try { S.security = await api('apiRemoveUser', e); toast('অনুমতি বাতিল হয়েছে'); fillMore(); }
+  catch (err) { toast('ব্যর্থ: ' + err.message); }
+}
+
+async function secRevoke(id) {
+  if (!(await ask('এই ডিভাইস থেকে বের করে দেবেন?', 'আবার ঢুকতে ইমেইলে নতুন কোড লাগবে।', { ok: 'বের করে দিন', danger: true }))) return;
+  try { S.security = await api('apiRevokeSession', id); toast('ডিভাইসটা বের করে দেওয়া হয়েছে'); fillMore(); }
+  catch (err) { toast('ব্যর্থ: ' + err.message); }
+}
+
+async function secRevokeOthers(btn) {
+  if (!(await ask('অন্য সব ডিভাইস থেকে বের করবেন?', 'শুধু এই ডিভাইসে লগইন থাকবে। বাকিদের আবার ঢুকতে নতুন কোড লাগবে — ফোন হারালে বা সন্দেহ হলে এটা চাপুন।',
+    { ok: 'সবাইকে বের করো', danger: true }))) return;
+  btn.classList.add('loading');
+  try { S.security = await api('apiRevokeOthers'); toast('অন্য সব ডিভাইস বের হয়ে গেছে'); fillMore(); }
+  catch (err) { btn.classList.remove('loading'); toast('ব্যর্থ: ' + err.message); }
+}
+
+async function runTool(name, el) {
+  const t = TOOLS[name];
+  if (t[4] && !(await ask(t[0], t[4], { ok: 'চালাও' }))) return;
+  el.classList.add('loading');
+  try {
+    const out = await api('apiTool', name);
+    await ask(t[0], out, { info: true });
+    S.insights = null; S.stale = true;
+    if (name === 'recurring' || name === 'dedupe' || name === 'archive') loadList(true);
+  } catch (e) {
+    await ask(t[0] + ' — ব্যর্থ', e.message, { info: true });
+  }
+  el.classList.remove('loading');
+}
+
+async function addHoliday(btn) {
+  const d = $('#hDate').value, r = $('#hReason').value;
+  if (!d) return toast('তারিখ বাছুন');
+  btn.classList.add('loading');
+  try {
+    setHolidays(await api('apiAddHoliday', d, r));
+    toast(shortDate(d) + ' ছুটি হিসেবে যোগ হলো ✅');
+    fillMore();
+  } catch (e) { btn.classList.remove('loading'); toast(e.message); }
+}
+
+async function deleteHoliday(k) {
+  if (!(await ask('ছুটি মুছবেন?', longDate(k) + ' আর ছুটি থাকবে না।', { ok: 'মুছে ফেলুন', danger: true }))) return;
+  try { setHolidays(await api('apiDeleteHoliday', k)); toast('মুছে ফেলা হয়েছে'); fillMore(); }
+  catch (e) { toast('ব্যর্থ: ' + e.message); }
+}
+
+async function saveOwner(btn) {
+  const v = $('#ownerName').value.trim();
+  if (!v) return toast('নাম লিখুন');
+  btn.classList.add('loading');
+  try {
+    setOwnerName(await api('apiSetOwnerName', v));
+    if (S.boot) S.boot.ownerName = OWNER_NAME;
+    toast('নাম সেভ হয়েছে ✅');
+    renderHero(); fillMore();
+  } catch (e) { btn.classList.remove('loading'); toast(e.message); }
+}
+
+async function saveTelegram(btn) {
+  const v = $('#tgTok').value.trim();
+  if (!v) return toast('টোকেন লিখুন');
+  btn.classList.add('loading');
+  try {
+    await api('apiSetTelegramToken', v);
+    S.boot.hasTelegram = true;
+    toast('টোকেন সেভ হয়েছে ✅ — এখন "Telegram টেস্ট" চাপুন');
+    fillMore();
+  } catch (e) { btn.classList.remove('loading'); toast(e.message); }
+}
+
+/* ---------- প্রিন্ট ---------- */
+async function printReport(dateKey) {
+  toast('রিপোর্ট তৈরি হচ্ছে…');
+  try {
+    const d = await api('apiList', { mode: 'day', date: dateKey });
+    buildPrint(dateKey, d.items || []);
+    const logo = $('#tpPrint .p-logo');   // logo পুরো লোড না হলে প্রিন্টে ফাঁকা আসতে পারে
+    if (logo && logo.decode) { try { await logo.decode(); } catch (e) {} }
+    window.print();
+  } catch (e) { toast('ব্যর্থ: ' + e.message); }
+}
+
+function buildPrint(dateKey, items) {
+  const done = items.filter(function (i) { return i.done; }).length;
+  const total = items.length;
+  const p = total ? Math.round(done / total * 100) : 0;
+  const rows = items.length ? items.map(function (i, n) {
+    return '<tr><td class="c">' + (n + 1) + '</td><td class="c">' + esc(i.category || '–') + '</td>' +
+      '<td>' + esc(i.task) + '</td><td class="c">' + esc(i.status || '–') + '</td><td>' + esc(i.note || '') + '</td></tr>';
+  }).join('') : '<tr><td colspan="5" class="c">' + (dateKey === todayKey() ? 'আজ' : 'এই দিনে') + ' কোনো টাস্ক এন্ট্রি ছিল না</td></tr>';
+
+  $('#tpPrint').innerHTML =
+    '<div class="p-head">' +
+      '<img class="p-logo" src="' + ORG_LOGO + '" alt="">' +
+      '<div class="p-org">' + esc(ORG_NAME) + '</div>' +
+      '<h2>Daily Work Report</h2>' +
+      '<div class="p-name">' + esc(OWNER_NAME) + '</div>' +
+      '<div class="p-date">' + esc(dateKey) + '</div>' +
+    '</div>' +
+    '<div class="p-rule"></div>' +
+    '<div class="p-sum">Total ' + total + '&nbsp;&nbsp;&nbsp;&nbsp;Completed ' + done +
+      '&nbsp;&nbsp;&nbsp;&nbsp;Pending ' + (total - done) + '&nbsp;&nbsp;&nbsp;&nbsp;Completion ' + p + '%</div>' +
+    '<table><thead><tr><th class="c" style="width:38px">#</th><th class="c" style="width:90px">Category</th>' +
+    '<th>Task</th><th class="c" style="width:85px">Status</th><th style="width:160px">Note</th></tr></thead>' +
+    '<tbody>' + rows + '</tbody></table>' +
+    '<div class="p-sign"><div>Prepared By<small>' + esc(OWNER_NAME) + '</small></div>' +
+      '<div>Authorised Signature<small>' + esc(ORG_NAME) + '</small></div></div>' +
+    '<div class="p-foot">Generated ' + new Date().toLocaleString('en-GB') +
+      ' · This is a system generated document of ' + esc(ORG_NAME) + '</div>';
+}
+
+/* ---------- শিট, ডায়ালগ, টোস্ট ---------- */
+function openSheet() {
+  $('#scrim').classList.add('open'); $('#sheet').classList.add('open');
+  document.body.classList.add('lock');
+}
+function closeSheet() {
+  $('#scrim').classList.remove('open'); $('#sheet').classList.remove('open');
+  document.body.classList.remove('lock');
+  F = null; T = null;
+}
+
+let dlgResolve = null;
+function ask(title, msg, opt) {
+  opt = opt || {};
+  return new Promise(function (resolve) {
+    dlgResolve = resolve;
+    $('#dlg').innerHTML = '<div class="dlg-box"><h3>' + esc(title) + '</h3><p>' + esc(msg) + '</p><div class="dlg-act">' +
+      (opt.info ? '' : '<button class="btn ghost" data-dlg="0">বাতিল</button>') +
+      '<button class="btn ' + (opt.danger ? 'danger solid' : 'primary') + '" data-dlg="1">' + esc(opt.ok || 'ঠিক আছে') + '</button></div></div>';
+    $('#dlg').classList.add('open');
+  });
+}
+function closeDlg(val) {
+  $('#dlg').classList.remove('open');
+  if (dlgResolve) { const r = dlgResolve; dlgResolve = null; r(val); }
+}
+$('#dlg').addEventListener('click', function (e) {
+  const b = e.target.closest('[data-dlg]');
+  if (b) closeDlg(b.dataset.dlg === '1');
+  else if (e.target.id === 'dlg') closeDlg(false);
+});
+
+function toast(msg) {
+  const t = $('#toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(window.__toastTimer);
+  window.__toastTimer = setTimeout(function () { t.classList.remove('show'); }, 2200);
+}
+
+/* ---------- ন্যাভিগেশন ---------- */
+function setTab(tab) {
+  if (S.tab === tab) return;
+  S.tab = tab;
+  window.scrollTo(0, 0);
+  render();
+  if (tab === 'tasks' && (S.stale || Date.now() - S.loadedAt > 60000)) loadList(true);
+}
+
+function setMode(mode) {
+  if (S.mode === mode) return;
+  S.mode = mode; S.filter = 'all';
+  if (mode === 'week') S.weekStart = weekStartOf(S.date);
+  if (mode !== 'search') S.items = [];
+  render();
+  loadList();
+}
+
+function pickDay(k) {
+  S.date = k;
+  if (k < addDays(S.stripStart, 1) || k > addDays(S.stripStart, 12)) S.stripStart = addDays(k, -3);
+  S.filter = 'all';
+  loadList();
+}
+
+async function refresh() {
+  S.refreshing = true; renderHero();
+  try {
+    if (S.tab === 'tasks') await loadList(true);
+    else if (S.tab === 'routine') { S.templates = null; fillRoutine(); }
+    else if (S.tab === 'insights') { S.insights = null; fillInsights(); }
+    else { S.holidays = null; fillMore(); }
+  } finally {
+    setTimeout(function () { S.refreshing = false; renderHero(); }, 400);
+  }
+}
+
+/* ---------- সব ক্লিক এক জায়গায় ---------- */
+document.addEventListener('click', function (e) {
+  const el = e.target.closest('[data-act]');
+  if (!el) return;
+  const a = el.dataset.act, v = el.dataset.v, row = el.dataset.row;
+  // সার্ভার থেকে কনফিগ আসার আগে শুধু লগইনের বোতাম চলে
+  if (!S.boot && a.indexOf('lg-') !== 0) return;
+
+  switch (a) {
+    case 'lg-send':   loginSend(el); break;
+    case 'lg-verify': loginVerify(el); break;
+    case 'lg-back':   S.login = { step: 'email', email: S.login ? S.login.email : '' }; showLogin(); break;
+    case 'logout':    logout(); break;
+
+    case 'tab':        setTab(v); break;
+    case 'mode':       setMode(v); break;
+    case 'refresh':    refresh(); break;
+    case 'pick-day':   pickDay(el.dataset.k); break;
+    case 'strip-prev': S.stripStart = addDays(S.stripStart, -7); S.date = addDays(S.date, -7); loadList(); break;
+    case 'strip-next': S.stripStart = addDays(S.stripStart, 7);  S.date = addDays(S.date, 7);  loadList(); break;
+    case 'week-prev':  S.weekStart = addDays(S.weekStart, -7); loadList(); break;
+    case 'week-next':  S.weekStart = addDays(S.weekStart, 7);  loadList(); break;
+    case 'filter':     S.filter = v; fillTasks(); break;
+    case 'done-sec':   S.doneOpen = !S.doneOpen; fillList(); break;
+    case 'toggle':     toggle(Number(row)); break;
+    case 'move':       moveToToday(Number(row)); break;
+    case 'edit':       { const it = findItem(row); if (it) openEditor(it); break; }
+    case 'add-on':     openEditor(null, { date: el.dataset.k }); break;
+    case 'quick-add':  quickAdd(); break;
+    case 'quick-form': quickForm(); break;
+    case 'fab':        if (S.tab === 'routine') openTplEditor(null); else openEditor(null); break;
+    case 'close':      closeSheet(); break;
+
+    // কাজের ফর্ম
+    case 'f-cat':  F.category = v; pickIn(el, a); $('#gHint').textContent = guestHint(v); break;
+    case 'f-pri':  F.priority = v; pickIn(el, a); break;
+    case 'f-sta':  F.status = v; pickIn(el, a); break;
+    case 'f-date': $('#fDate').value = v; F.date = v; pickIn(el, a); break;
+    case 'f-clear': { const inp = document.getElementById(v); if (inp) inp.value = ''; break; }
+    case 'f-save': saveTask(el); break;
+    case 'f-del':  deleteTask(); break;
+    case 'f-copy':
+      readForm();
+      F.ref = null; F.status = 'To Do'; F.source = 'app'; F.rollover = 0; F.onCalendar = false;
+      renderEditor(); toast('কপি — তারিখ বদলে "যোগ করুন" চাপুন');
+      break;
+
+    // রুটিন
+    case 'tpl-edit': {
+      const t = (S.templates || []).filter(function (x) { return x.id === el.dataset.id; })[0];
+      if (t) openTplEditor(t);
+      break;
+    }
+    case 'tpl-active': e.stopPropagation(); toggleTemplate(el.dataset.id); break;
+    case 't-rep':  readTplForm(); T.repeat = v; renderTplEditor(); break;
+    case 't-cat':  T.category = v; pickIn(el, a); break;
+    case 't-pri':  T.priority = v; pickIn(el, a); break;
+    case 't-act':  T.active = !T.active; el.classList.toggle('on', T.active); break;
+    case 't-wd': {
+      const i = T.weekdays.indexOf(v);
+      if (i === -1) T.weekdays.push(v); else T.weekdays.splice(i, 1);
+      el.classList.toggle('on', i === -1);
+      break;
+    }
+    case 'tpl-save': saveTemplate(el); break;
+    case 'tpl-del':  deleteTemplate(); break;
+
+    // টুলস ও সেটিংস
+    case 'tool':    runTool(el.dataset.tool, el); break;
+    case 'hol-add': addHoliday(el); break;
+    case 'hol-del': deleteHoliday(el.dataset.k); break;
+    case 'tg-save': saveTelegram(el); break;
+    case 'owner-save': saveOwner(el); break;
+    case 'sec-user-add': secAddUser(el); break;
+    case 'sec-user-del': secRemoveUser(el.dataset.e); break;
+    case 'sec-sess-del': secRevoke(el.dataset.id); break;
+    case 'sec-sess-all': secRevokeOthers(el); break;
+    case 'sec-reload':   S.security = null; fillMore(); break;
+    case 'print':   printReport(($('#printDate') || {}).value || S.date); break;
+  }
+});
+
+document.addEventListener('change', function (e) {
+  if (e.target.id === 'pickDate' && e.target.value) {
+    S.stripStart = addDays(e.target.value, -3);
+    pickDay(e.target.value);
+  }
+  if (e.target.id === 'fDate' && F) {
+    F.date = e.target.value;
+    document.querySelectorAll('[data-act="f-date"]').forEach(function (b) { b.classList.toggle('on', b.dataset.v === F.date); });
+  }
+});
+
+let searchTimer = null;
+document.addEventListener('input', function (e) {
+  if (e.target.id !== 'q') return;
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(function () { S.q = e.target.value; loadList(); }, 350);
+});
+
+document.addEventListener('keydown', function (e) {
+  if (e.key === 'Enter' && e.target.id === 'quick') { e.preventDefault(); quickAdd(); }
+  if (e.key === 'Enter' && e.target.id === 'lgEmail') { e.preventDefault(); const b = $('[data-act="lg-send"]'); if (b) loginSend(b); }
+  if (e.key === 'Enter' && e.target.id === 'lgCode')  { e.preventDefault(); const b = $('[data-act="lg-verify"]'); if (b) loginVerify(b); }
+  if (e.key === 'Escape') {
+    if ($('#dlg').classList.contains('open')) closeDlg(false);
+    else if ($('#sheet').classList.contains('open')) closeSheet();
+  }
+});
+
+// অ্যাপে ফিরে এলে (অন্য ট্যাব/অ্যাপ থেকে) এক মিনিটের পুরনো ডেটা হলে নতুন করে আনি
+document.addEventListener('visibilitychange', function () {
+  if (!document.hidden && S.boot && S.tab === 'tasks' && Date.now() - S.loadedAt > 60000) loadList(true);
+});
+
+/* ---------- লগইন (মালিক ছাড়া অন্যদের জন্য) ---------- */
+function showLogin() {
+  // লগইন পাতার উপর PIN লক যেন না বসে — লগইনের পর লক নিজে আসে
+  if (window.appLockWaitLogin) appLockWaitLogin();
+  S.boot = null; S.viewKey = ''; S.security = null;
+  if (!S.login) S.login = { step: 'email', email: '' };
+  closeSheet();
+  $('#nav').innerHTML = '';
+  $('#fab').style.display = 'none';
+  $('#hero').innerHTML =
+    '<div class="hero-top">' + brandHead() + '</div>' +
+    '<div class="hero-sub"><b>লগইন</b><span>অনুমতি দেওয়া ইমেইল দিয়ে ঢুকুন</span></div>';
+
+  const L = S.login;
+  $('#view').innerHTML =
+    '<div class="panel" style="margin-top:4px">' +
+      '<h3>' + ic('key') + (L.step === 'email' ? ' আপনার ইমেইল' : ' কোড দিন') + '</h3>' +
+      (L.step === 'email'
+        ? '<input id="lgEmail" class="inp" type="email" inputmode="email" autocomplete="email" placeholder="name@gmail.com" value="' + esc(L.email) + '">' +
+          '<div class="hint">অনুমতির তালিকায় থাকা ইমেইলেই শুধু ৬ সংখ্যার কোড যায়।</div>' +
+          '<div class="sh-act" style="position:static"><button class="btn primary grow" data-act="lg-send">' + ic('mail', 16) + ' কোড পাঠাও</button></div>'
+        : '<div class="hint" style="margin:0 0 8px">ইমেইলটা অনুমতির তালিকায় থাকলে ' + esc(L.email) + '-এ কোড চলে গেছে। Inbox-এ না পেলে Spam দেখুন।</div>' +
+          '<input id="lgCode" class="inp" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="৬ সংখ্যার কোড" style="font-size:20px;letter-spacing:.3em;text-align:center">' +
+          '<div class="sh-act" style="position:static">' +
+            '<button class="btn ghost" data-act="lg-back">অন্য ইমেইল</button>' +
+            '<button class="btn primary grow" data-act="lg-verify">ঢুকুন</button></div>') +
+      '<div class="ferr" id="fErr"></div>' +
+    '</div>' +
+    '<div class="foot">একবার ঢুকলে এই ব্রাউজারে অনেক দিন আর লগইন লাগবে না।</div>';
+  setTimeout(function () { const x = $('#lgEmail') || $('#lgCode'); if (x) x.focus(); }, 80);
+}
+
+async function loginSend(btn) {
+  const email = $('#lgEmail').value.trim().toLowerCase();
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return formError('ইমেইল ঠিক নেই।');
+  btn.classList.add('loading'); formError('');
+  try {
+    await api('apiSendCode', email);
+    S.login = { step: 'code', email: email };
+    showLogin();
+  } catch (e) { btn.classList.remove('loading'); formError(e.message); }
+}
+
+async function loginVerify(btn) {
+  const code = $('#lgCode').value.replace(/\D/g, '');
+  if (code.length !== 6) return formError('৬ সংখ্যার কোড দিন।');
+  btn.classList.add('loading'); formError('');
+  try {
+    setAuth(await api('apiVerifyCode', S.login.email, code, deviceName()));
+    S.login = null;
+    toast('স্বাগতম 👋');
+    boot();
+    // লগইনের পর PIN লক (উপরের AppLock অংশ)
+    if (window.appLockAfterLogin) appLockAfterLogin();
+  } catch (e) { btn.classList.remove('loading'); formError(e.message); }
+}
+
+async function logout() {
+  if (!(await ask('লগআউট করবেন?', 'আবার ঢুকতে ইমেইলে নতুন কোড লাগবে।', { ok: 'লগআউট' }))) return;
+  try { await api('apiLogout'); } catch (e) {}
+  setAuth('');
+  S.login = { step: 'email', email: S.boot && S.boot.user ? S.boot.user.email : '' };
+  showLogin();
+}
+
+/* ---------- শুরু ---------- */
+async function boot() {
+  // টোকেন নেই — সার্ভারকে না ডেকেই সরাসরি লগইন পাতা
+  if (!AUTH) { S.loading = false; showLogin(); return; }
+  S.loading = true; S.viewKey = '';
+  render();
+  try {
+    const b = await api('apiBoot', listParams());
+    S.boot = b;
+    setOwnerName(b.ownerName);
+    setHolidays(b.holidays.map(function (d) { return { date: d, reason: '' }; }));
+    S.holidays = null;   // কারণসহ পুরো তালিকা "আরও" খুললে আসে
+    if (b.today !== S.date) {   // ফোনের ঘড়ি আর সার্ভারের দিন না মিললে সার্ভারেরটা
+      S.date = b.today; S.stripStart = addDays(b.today, -3); S.weekStart = weekStartOf(b.today);
+      render(); loadList();
+    } else {
+      render(); applyList(b.list);
+    }
+  } catch (e) {
+    S.loading = false;
+    if (/AUTH_REQUIRED/.test(e.message)) { setAuth(''); showLogin(); return; }
+    $('#hero').innerHTML = '<div class="hero-top">' + brandHead() + '</div>';
+    $('#view').innerHTML = emptyBox('🔒', 'অ্যাপ খোলা যায়নি', esc(e.message),
+      '<button class="btn ghost sm" onclick="boot()">আবার চেষ্টা</button>');
+    $('#fab').style.display = 'none';
+  }
+}
+boot();
+</script>
+</body>
+</html>

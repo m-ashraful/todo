@@ -1,0 +1,13 @@
+{
+  "name": "Daily Todo — Technique Easy Education",
+  "short_name": "Daily Todo",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#1E1B4B",
+  "theme_color": "#312E81",
+  "lang": "bn",
+  "icons": [
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}
