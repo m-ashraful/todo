@@ -554,6 +554,117 @@ function callServer(fn, args) {
   }
   .toast.show { opacity: 1; transform: translate(-50%, 0); }
 
+  /* ============ একসাথে অনেক কাজ (নির্বাচন) ============ */
+  .listbar { display: flex; align-items: center; gap: 8px; margin: 2px 2px 8px; min-height: 30px; }
+  .listbar .lb-t { flex: 1; font-size: 12px; color: var(--ink-3); font-weight: 600; min-width: 0; }
+  .lbtn {
+    border: 1px solid var(--line); background: var(--surface); color: var(--ink-2); border-radius: 10px;
+    padding: 6px 11px; font-size: 12.5px; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; flex: none;
+  }
+  .lbtn.on { background: var(--brand); border-color: var(--brand); color: #fff; }
+  .info .lbtn { margin-left: auto; align-self: center; }
+  .sec .sbtn2 {
+    border: 0; background: color-mix(in srgb, var(--ok) 13%, transparent); color: var(--ok);
+    font-size: 11.5px; font-weight: 700; padding: 3px 9px; border-radius: 8px; display: inline-flex; align-items: center; gap: 4px;
+  }
+  .card { -webkit-touch-callout: none; }
+  body.selecting .card { user-select: none; -webkit-user-select: none; }
+  .card .pick {
+    width: 22px; height: 22px; border-radius: 7px; border: 2px solid var(--ink-3); flex: none; display: grid;
+    place-items: center; margin-top: 1px; color: #fff; transition: background .15s, border-color .15s;
+  }
+  .card.sel { box-shadow: 0 0 0 2px var(--brand), var(--shadow); }
+  .card.sel .pick { background: var(--brand); border-color: var(--brand); }
+  .card.busy { opacity: .55; }
+  .bulk {
+    position: fixed; z-index: 45; left: 50%; transform: translateX(-50%); display: none;
+    bottom: calc(74px + env(safe-area-inset-bottom)); width: min(540px, calc(100% - 20px));
+    background: #141831; color: #fff; border-radius: 18px; padding: 10px; box-shadow: 0 18px 40px -12px rgba(10,12,30,.7);
+  }
+  body.selecting .bulk { display: block; animation: lgIn .2s ease-out; }
+  body.selecting .fab { display: none !important; }
+  body.selecting .toast { bottom: calc(210px + env(safe-area-inset-bottom)); }
+  body.selecting main { padding-bottom: 130px; }
+  .bulk-top { display: flex; align-items: center; gap: 8px; padding: 0 4px 9px; font-size: 13.5px; font-weight: 800; }
+  .bulk-top .grow { flex: 1; }
+  .bulk-top button { border: 0; background: rgba(255,255,255,.13); color: #fff; border-radius: 9px; padding: 6px 11px; font-size: 12px; font-weight: 700; }
+  .bulk-acts { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+  .bulk-acts button {
+    border: 0; border-radius: 12px; padding: 9px 2px 7px; background: rgba(255,255,255,.08); color: #fff;
+    display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 11px; font-weight: 700;
+  }
+  .bulk-acts button:disabled { opacity: .35; }
+  .bulk-acts .ok .ic { color: #6EE7B7; }
+  .bulk-acts .del .ic { color: #FDA4AF; }
+  .opt {
+    display: flex; align-items: center; gap: 10px; width: 100%; border: 0; background: var(--surface-2); color: var(--ink);
+    border-radius: 12px; padding: 13px 14px; font-weight: 700; font-size: 14px; margin-bottom: 8px; text-align: left;
+  }
+  .opt .dot { width: 11px; height: 11px; border-radius: 50%; background: var(--c); flex: none; }
+  .opt small { margin-left: auto; color: var(--ink-3); font-weight: 600; font-size: 12px; }
+
+  /* ============ কম্পিউটার — বাঁয়ে সাইডবার, ডানে কাজ ============ */
+  .side { display: none; }
+  @media (min-width: 1000px) {
+    body { padding-bottom: 28px; padding-left: 268px; }
+    body.is-login { padding-left: 0; }
+    body.is-login .side { display: none !important; }
+    .side {
+      display: flex; flex-direction: column; position: fixed; left: 0; top: 0; bottom: 0; width: 268px; z-index: 50;
+      padding: 22px 16px 16px; color: #fff; overflow-y: auto;
+      background:
+        radial-gradient(130% 50% at 100% 0%, rgba(124,58,237,.6) 0%, transparent 60%),
+        radial-gradient(90% 40% at 0% 100%, rgba(14,165,233,.22) 0%, transparent 60%),
+        linear-gradient(180deg, var(--hero-1), #15133A);
+    }
+    .nav, .fab { display: none !important; }
+    #app { max-width: 940px; padding: 0 28px; }
+    .hero { border-radius: 22px; margin-top: 20px; padding: 16px 22px 20px; }
+    .hero .brand, .hero .modes { display: none; }
+    .hero-top { justify-content: flex-end; height: 0; }
+    .hero-top .hbtn { position: relative; top: 2px; }
+    .hero-date { margin-top: 0; font-size: 14.5px; padding-right: 48px; }
+    main { padding: 16px 0 0; }
+    .chips-row { margin: 0 0 4px; padding: 0 0 6px; flex-wrap: wrap; overflow: visible; }
+    .card { padding: 13px 16px 13px 17px; transition: box-shadow .15s, transform .12s, opacity .2s; }
+    .card:hover { box-shadow: 0 0 0 1px var(--line), 0 10px 24px -14px rgba(20,24,49,.45); }
+    .card.sel:hover { box-shadow: 0 0 0 2px var(--brand), var(--shadow); }
+    .sheet {
+      left: auto; right: 0; top: 0; bottom: 0; margin: 0; width: 470px; max-width: 100vw; max-height: none;
+      border-radius: 22px 0 0 22px; transform: translateX(105%); padding: 16px 24px 22px;
+    }
+    .sheet .grab { display: none; }
+    .toast { bottom: 28px; }
+    body.selecting .toast { bottom: 150px; }
+    .bulk { bottom: 22px; left: calc(50% + 134px); width: min(600px, calc(100% - 320px)); }
+    body.selecting main { padding-bottom: 120px; }
+    .tools { grid-template-columns: repeat(3, 1fr); }
+    .addrow { grid-template-columns: 200px 1fr auto; }
+  }
+  .s-brand { display: flex; align-items: center; gap: 11px; padding: 0 4px; }
+  .s-brand .brand-logo { width: 44px; height: 44px; }
+  .s-brand b { display: block; font-size: 15.5px; font-weight: 800; line-height: 1.25; }
+  .s-brand span { display: block; font-size: 10px; font-weight: 700; letter-spacing: .22em; opacity: .7; margin-top: 3px; }
+  .s-owner { padding: 12px 4px 0; }
+  .s-new {
+    margin: 18px 0 8px; border: 0; border-radius: 13px; padding: 12px; font-weight: 800; font-size: 14px; color: #fff;
+    background: linear-gradient(135deg, #6366F1, #A855F7); box-shadow: 0 10px 22px -10px rgba(168,85,247,.9);
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .s-lbl { font-size: 10.5px; font-weight: 800; letter-spacing: .16em; opacity: .5; margin: 16px 8px 6px; }
+  .s-it, .s-sub {
+    display: flex; align-items: center; gap: 11px; width: 100%; border: 0; background: none; color: rgba(255,255,255,.8);
+    text-align: left; border-radius: 11px; font-weight: 700; transition: background .15s, color .15s;
+  }
+  .s-it { padding: 10px 12px; font-size: 14px; }
+  .s-it:hover, .s-sub:hover { background: rgba(255,255,255,.08); color: #fff; }
+  .s-it.on { background: rgba(255,255,255,.16); color: #fff; box-shadow: inset 3px 0 0 #C4B5FD; }
+  .s-subs { margin: 2px 0 6px 22px; padding-left: 12px; border-left: 1px solid rgba(255,255,255,.14); }
+  .s-sub { padding: 7px 10px; font-size: 13px; font-weight: 600; }
+  .s-sub.on { color: #fff; background: rgba(255,255,255,.1); }
+  .s-sub .badge { margin-left: auto; }
+  .s-foot { margin-top: auto; padding: 16px 6px 0; font-size: 11.5px; opacity: .6; line-height: 1.5; word-break: break-all; }
+
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 
   /* ============ রিপোর্ট প্রিন্ট ============ */
@@ -821,6 +932,7 @@ function callServer(fn, args) {
 </script>
 </div>
 
+<aside class="side" id="side"></aside>
 <div id="app">
   <header class="hero" id="hero"></header>
   <main id="view"></main>
@@ -829,6 +941,7 @@ function callServer(fn, args) {
 <button class="fab" id="fab" data-act="fab" aria-label="নতুন"></button>
 
 <nav class="nav"><div class="nav-in" id="nav"></div></nav>
+<div class="bulk" id="bulk"></div>
 
 <div class="scrim" id="scrim" data-act="close"></div>
 <section class="sheet" id="sheet" aria-modal="true" role="dialog"></section>
@@ -855,6 +968,7 @@ function setOwnerName(n) {
   OWNER_NAME = n;
   try { localStorage.setItem(OWNER_KEY, n); } catch (e) {}
 }
+const IS_SITE = true;
 
 const BN_WEEK      = ['রবি', 'সোম', 'মঙ্গল', 'বুধ', 'বৃহঃ', 'শুক্র', 'শনি'];
 const BN_WEEK_FULL = ['রবিবার', 'সোমবার', 'মঙ্গলবার', 'বুধবার', 'বৃহস্পতিবার', 'শুক্রবার', 'শনিবার'];
@@ -918,7 +1032,10 @@ const ICONS = {
   shield: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/>',
   sliders: '<path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/>',
   sheet: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/>',
-  ext: '<path d="M15 3h6v6M10 14 21 3M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"/>'
+  ext: '<path d="M15 3h6v6M10 14 21 3M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"/>',
+  checksq: '<rect x="3" y="3" width="18" height="18" rx="4"/><path d="m8 12 3 3 5-6"/>',
+  undo: '<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>',
+  tag: '<path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L2 12V2h10l8.6 8.6a2 2 0 0 1 0 2.8z"/><circle cx="7" cy="7" r="1.5"/>'
 };
 
 function ic(name, size) {
@@ -967,9 +1084,12 @@ const S = {
   date: dhakaToday(), stripStart: addDays(dhakaToday(), -3), weekStart: weekStartOf(dhakaToday()),
   q: '', filter: 'all', items: [], counts: {}, overdue: 0, doneOpen: false,
   loading: true, error: null, loadedAt: 0, stale: false, seq: 0, refreshing: false,
-  templates: null, insights: null, holidays: null, viewKey: ''
+  templates: null, insights: null, holidays: null, viewKey: '',
+  mut: 0,      // প্রতিটা টিক/বদল শুরু ও শেষে বাড়ে — এর মাঝে আসা তালিকা পুরনো, ফেলে দেওয়া হয়
+  sel: null    // নির্বাচন মোড: null = বন্ধ, নইলে { রো: true }
 };
 const busy = {};
+function anyBusy() { return Object.keys(busy).some(function (k) { return busy[k]; }); }
 let F = null;   // খোলা কাজের ফর্ম
 let T = null;   // খোলা রুটিনের ফর্ম
 
@@ -1006,11 +1126,17 @@ function applyList(res) {
   }
   if (S.filter !== 'all' && S.filter !== 'must' &&
       !S.items.some(function (i) { return i.category === S.filter; })) S.filter = 'all';
+  // বাছাই করা কাজগুলোর যেটা আর তালিকায় নেই, সেটা বাছাই থেকেও বাদ
+  if (S.sel) {
+    const have = {};
+    S.items.forEach(function (i) { have[i.row] = true; });
+    Object.keys(S.sel).forEach(function (r) { if (!have[r]) delete S.sel[r]; });
+  }
   if (S.tab === 'tasks') { renderHero(); fillTasks(); }
 }
 
 async function loadList(silent) {
-  const seq = ++S.seq;
+  const seq = ++S.seq, mut = S.mut;
   if (S.mode === 'search' && !S.q.trim()) {
     S.items = []; S.loading = false; S.error = null;
     if (S.tab === 'tasks') { renderHero(); fillTasks(); }
@@ -1019,7 +1145,12 @@ async function loadList(silent) {
   if (!silent) { S.loading = true; if (S.tab === 'tasks') { renderHero(); fillTasks(); } }
   try {
     const res = await api('apiList', listParams());
-    if (seq === S.seq) applyList(res);
+    if (seq !== S.seq) return;
+    // তালিকা আনার মাঝে কোনো কাজে টিক/বদল হয়েছে — এই তালিকায় সেটা নেই। বসালে টিক উল্টে যেত
+    // (আগের "একটা Done হয়, আরেকটা ফিরে আসে" সমস্যা)। তাই ফেলে দিয়ে একটু পরে আবার আনি।
+    if (silent && (mut !== S.mut || anyBusy())) { scheduleReload(); return; }
+    applyList(res);
+    if (mut !== S.mut) scheduleReload();
   } catch (e) {
     if (seq !== S.seq) return;
     S.loading = false; S.error = e.message;
@@ -1031,15 +1162,15 @@ let reloadTimer = null;
 function scheduleReload() {
   clearTimeout(reloadTimer);
   reloadTimer = setTimeout(function () {
-    if (Object.keys(busy).some(function (k) { return busy[k]; })) return scheduleReload();
+    if (anyBusy()) return scheduleReload();
     loadList(true);
-  }, 1200);
+  }, 1500);
 }
 
 /* ---------- রেন্ডার ---------- */
 function render() {
   if (S.login) return;   // লগইন পাতা খোলা থাকলে পেছনের কোনো লোড সেটা মুছে দেবে না
-  renderHero(); renderNav(); renderView();
+  renderHero(); renderNav(); renderView(); renderBulk();
 }
 
 function ring(p, size, stroke, onHero) {
@@ -1085,6 +1216,34 @@ function renderHero() {
   $('#hero').innerHTML =
     '<div class="hero-top">' + brandHead() +
     '<button class="hbtn' + (S.refreshing ? ' spin' : '') + '" data-act="refresh" aria-label="রিফ্রেশ">' + ic('refresh') + '</button></div>' + body;
+  renderSide();
+}
+
+/* কম্পিউটারে বাঁয়ের সাইডবার (ফোনে CSS দিয়ে লুকানো — সেখানে নিচের ট্যাব-বার) */
+function renderSide() {
+  const el = $('#side');
+  if (!el) return;
+  if (S.login) { el.innerHTML = ''; return; }
+  const tabs = [['tasks', 'কাজ', 'list'], ['routine', 'রুটিন', 'repeat'], ['insights', 'রিপোর্ট', 'chart'], ['more', 'আরও', 'grid']];
+  const modes = [['day', 'দিন', 'sun'], ['week', 'সপ্তাহ', 'calendar'], ['overdue', 'বকেয়া', 'alert'], ['search', 'খুঁজুন', 'search']];
+  el.innerHTML =
+    '<div class="s-brand">' +
+      (ORG_LOGO ? '<img class="brand-logo" src="' + ORG_LOGO + '" alt="logo" onerror="this.remove()">' : '') +
+      '<div><b>' + esc(ORG_NAME) + '</b><span>TO-DO LIST</span></div></div>' +
+    '<div class="s-owner"><span class="owner"><i>' + ic('user', 11) + '</i>' + esc(OWNER_NAME) + '</span></div>' +
+    '<button class="s-new" data-act="side-new">' + ic('plus', 18) + (S.tab === 'routine' ? 'নতুন রুটিন' : 'নতুন কাজ') + '</button>' +
+    '<div class="s-lbl">মেনু</div>' +
+    tabs.map(function (t) {
+      let h = '<button class="s-it' + (S.tab === t[0] ? ' on' : '') + '" data-act="tab" data-v="' + t[0] + '">' + ic(t[2], 18) + t[1] + '</button>';
+      if (t[0] === 'tasks') {
+        h += '<div class="s-subs">' + modes.map(function (m) {
+          return '<button class="s-sub' + (S.tab === 'tasks' && S.mode === m[0] ? ' on' : '') + '" data-act="side-mode" data-v="' + m[0] + '">' +
+            ic(m[2], 15) + m[1] + (m[0] === 'overdue' && S.overdue ? '<span class="badge">' + S.overdue + '</span>' : '') + '</button>';
+        }).join('') + '</div>';
+      }
+      return h;
+    }).join('') +
+    '<div class="s-foot">' + (S.boot && S.boot.user ? esc(S.boot.user.email) + '<br>' : '') + 'Smart To-Do · v9.0</div>';
 }
 
 // সব পাতার উপরে — logo, প্রতিষ্ঠানের নাম, অ্যাপের নাম আর কার To-Do (logo না এলে শুধু লেখা)
@@ -1138,7 +1297,7 @@ function tasksFrame() {
 
 function fillTasks() {
   if (S.login || S.tab !== 'tasks' || !$('#list')) return;
-  fillToolbar(); fillChips(); fillList();
+  fillToolbar(); fillChips(); fillList(); renderBulk();
 }
 
 function fillToolbar() {
@@ -1163,7 +1322,8 @@ function fillToolbar() {
       '<b>' + esc(shortDate(S.weekStart)) + ' – ' + esc(shortDate(addDays(S.weekStart, 6))) + '</b>' +
       '<button class="sbtn" data-act="week-next" aria-label="পরের সপ্তাহ">' + ic('chevR') + '</button></div>';
   } else if (S.mode === 'overdue') {
-    tb.innerHTML = '<div class="info">' + ic('alert', 16) + '<span>তারিখ পেরিয়ে যাওয়া অসমাপ্ত কাজ। "আজ" চাপলে কাজটা আজকের তালিকায় চলে আসবে।</span></div>';
+    tb.innerHTML = '<div class="info">' + ic('alert', 16) + '<span>তারিখ পেরিয়ে যাওয়া অসমাপ্ত কাজ। "আজ" চাপলে কাজটা আজকের তালিকায় চলে আসবে।</span>' +
+      (S.items.length > 1 && !S.sel ? '<button class="lbtn" data-act="overdue-today">সব আজকে আনুন</button>' : '') + '</div>';
   } else if (!$('#q')) {
     tb.innerHTML = '<div class="search">' + ic('search') +
       '<input id="q" type="search" placeholder="কাজ, নোট বা গেস্ট খুঁজুন…" value="' + esc(S.q) + '" autocomplete="off"></div>';
@@ -1212,15 +1372,21 @@ function fillList() {
   if (S.mode === 'search') {
     if (!S.q.trim()) { box.innerHTML = emptyBox('🔎', 'খুঁজুন', 'কাজের নাম, নোট, গেস্ট বা ক্যাটাগরি লিখুন'); return; }
     const vis = visibleItems();
-    box.innerHTML = vis.length ? grouped(vis, {}) : emptyBox('🤷', 'কিছু পাওয়া যায়নি', '“' + esc(S.q) + '” দিয়ে কোনো কাজ নেই');
+    box.innerHTML = vis.length ? listbar(bnNum(vis.length) + 'টা পাওয়া গেছে') + grouped(vis, {})
+                               : emptyBox('🤷', 'কিছু পাওয়া যায়নি', '“' + esc(S.q) + '” দিয়ে কোনো কাজ নেই');
     return;
   }
   if (S.mode === 'overdue') {
     const vis = visibleItems();
-    box.innerHTML = vis.length ? grouped(vis, { move: true }) : emptyBox('✨', 'কোনো বকেয়া নেই', 'আগের সব কাজ হয় শেষ, নয়তো সামনে সরানো হয়েছে');
+    box.innerHTML = vis.length ? listbar(bnNum(vis.length) + 'টা বকেয়া') + grouped(vis, { move: true })
+                               : emptyBox('✨', 'কোনো বকেয়া নেই', 'আগের সব কাজ হয় শেষ, নয়তো সামনে সরানো হয়েছে');
     return;
   }
-  if (S.mode === 'week') { box.innerHTML = weekList(); return; }
+  if (S.mode === 'week') {
+    const vis = visibleItems();
+    box.innerHTML = (vis.length ? listbar(bnNum(vis.length) + 'টা কাজ · ' + bnNum(vis.filter(function (i) { return !i.done; }).length) + 'টা বাকি') : '') + weekList();
+    return;
+  }
 
   // দিনের তালিকা
   if (!S.items.length) {
@@ -1232,19 +1398,37 @@ function fillList() {
 
   const pending = vis.filter(function (i) { return !i.done; });
   const done    = vis.filter(function (i) { return i.done; });
-  let h = '';
+  let h = listbar(bnNum(vis.length) + 'টা কাজ · ' + bnNum(done.length) + 'টা সম্পন্ন');
   if (pending.length) {
-    h += '<div class="sec"><span>বাকি ' + pending.length + '</span><span class="rule"></span></div>' +
+    h += '<div class="sec"><span>বাকি ' + bnNum(pending.length) + '</span><span class="rule"></span>' +
+         (pending.length > 1 && !S.sel ? '<button class="sbtn2" data-act="all-done">' + ic('check', 12) + 'সব Done</button>' : '') + '</div>' +
          pending.map(function (i) { return card(i, {}); }).join('');
   } else {
     h += emptyBox('🎉', 'CONGRATULATIONS', 'সব কাজ সম্পন্ন হয়েছে');
   }
   if (done.length) {
-    h += '<div class="sec tap" data-act="done-sec"><span>সম্পন্ন ' + done.length + '</span><span class="rule"></span>' +
+    h += '<div class="sec tap" data-act="done-sec"><span>সম্পন্ন ' + bnNum(done.length) + '</span><span class="rule"></span>' +
          '<span class="act">' + (S.doneOpen ? 'Hide' : 'Show') + '</span></div>';
     if (S.doneOpen) h += done.map(function (i) { return card(i, {}); }).join('');
   }
   box.innerHTML = h;
+}
+
+// তালিকার উপরের সারি — সারসংক্ষেপ আর "নির্বাচন" (একসাথে অনেক কাজ Done/Status/সরানো/মোছা)
+function listbar(txt) {
+  return '<div class="listbar"><span class="lb-t">' + (S.sel ? 'কাজে চাপ দিয়ে বাছুন' : txt) + '</span>' +
+    '<button class="lbtn' + (S.sel ? ' on' : '') + '" data-act="sel-mode">' + ic(S.sel ? 'x' : 'checksq', 14) +
+    (S.sel ? 'নির্বাচন বন্ধ' : 'নির্বাচন') + '</button></div>';
+}
+
+// এই মুহূর্তে পর্দায় যে কাজগুলো দেখা যাচ্ছে ("সব বাছুন" এগুলোই বাছে — লুকানো সম্পন্নগুলো নয়)
+function onScreenItems() {
+  const vis = visibleItems();
+  if (S.mode === 'day' && !S.doneOpen) return vis.filter(function (i) { return !i.done; });
+  return vis;
+}
+function selectedItems() {
+  return S.sel ? S.items.filter(function (i) { return S.sel[i.row]; }) : [];
 }
 
 function grouped(items, opts) {
@@ -1298,13 +1482,19 @@ function card(i, opts) {
   if (i.onCalendar) tags += '<span class="tag plain">' + ic('calendar', 11) + '</span>';
   if (i.source && !(i.source in SRC)) tags += '<span class="tag plain">' + ic('repeat', 11) + '</span>';
 
-  return '<article class="card' + (i.done ? ' done' : '') + (stuck ? ' stuck' : '') + '" style="--c:' + c + '" data-act="edit" data-row="' + i.row + '">' +
-    '<button class="chk" data-act="toggle" data-row="' + i.row + '" aria-label="' + (i.done ? 'আবার শুরু' : 'সম্পন্ন') + '">' + (i.done ? ic('check', 13) : '') + '</button>' +
+  // নির্বাচন মোডে কার্ডে চাপ = বাছা/ছাড়া; বাঁয়ে গোল টিকের বদলে চৌকো বাক্স
+  const picking = !!S.sel, picked = picking && !!S.sel[i.row];
+  const lead = picking
+    ? '<span class="pick">' + (picked ? ic('check', 13) : '') + '</span>'
+    : '<button class="chk" data-act="toggle" data-row="' + i.row + '" aria-label="' + (i.done ? 'আবার শুরু' : 'সম্পন্ন') + '">' + (i.done ? ic('check', 13) : '') + '</button>';
+  return '<article class="card' + (i.done ? ' done' : '') + (stuck ? ' stuck' : '') + (picked ? ' sel' : '') + (busy[i.row] ? ' busy' : '') +
+    '" style="--c:' + c + '" data-act="' + (picking ? 'pick' : 'edit') + '" data-row="' + i.row + '">' +
+    lead +
     '<div class="cbody"><div class="row1"><div class="ttl">' + esc(i.task) + '</div>' +
     (time ? '<div class="tm">' + time + '</div>' : '') + '</div>' +
     '<div class="tags">' + tags + '</div>' +
     (i.note ? '<div class="note">' + esc(i.note) + '</div>' : '') + '</div>' +
-    (opts.move ? '<button class="mini" data-act="move" data-row="' + i.row + '">আজ' + ic('chevR', 14) + '</button>' : '') +
+    (opts.move && !picking ? '<button class="mini" data-act="move" data-row="' + i.row + '">আজ' + ic('chevR', 14) + '</button>' : '') +
     '</article>';
 }
 
@@ -1438,59 +1628,219 @@ async function deleteTask() {
   if (!ok) return;
   const ref = F.ref;
   closeSheet();
-  S.items = S.items.filter(function (x) { return x.row !== ref.row; });
-  renderHero(); fillTasks();
-  try {
-    await api('apiDeleteTask', ref);
-    toast('মুছে ফেলা হয়েছে');
-  } catch (e) { toast('ব্যর্থ: ' + e.message); }
-  S.insights = null;
-  loadList(true);
+  deleteItems([findItem(ref.row) || { row: ref.row, task: ref.task, date: ref.date }], true);
 }
 
-/* ---------- টিক, সরানো, দ্রুত যোগ ---------- */
-async function toggle(row) {
-  const i = findItem(row);
-  if (!i || busy[row]) return;
-  busy[row] = true;
-  const prev = Object.assign({}, i);
-  const next = i.done ? (S.boot.statuses[0] || 'To Do') : 'Done';
-  i.done = !i.done; i.status = next;
-  const c = S.counts[i.date];
-  if (c) c.d += i.done ? 1 : -1;
-  toast(i.done ? 'সম্পন্ন ✓' : 'আবার শুরুতে ফেরানো হলো');
-  refreshAfterLocalChange();
-  try {
-    Object.assign(i, await api('apiPatchTask', refOf(prev), { status: next }));
-  } catch (e) {
-    Object.assign(i, prev);
-    if (c) c.d += prev.done ? 1 : -1;
-    toast('ব্যর্থ: ' + e.message);
+/* ---------- টিক, সরানো, মোছা — একটা হোক বা অনেকগুলো, সব এখান দিয়ে ----------
+ * পর্দায় সাথে সাথে বদলায়, সার্ভারে পাঠায়, সার্ভারের উত্তর বসায়; ব্যর্থ হলে আগের অবস্থায় ফেরে।
+ * চলাকালীন S.mut বদলায়, তাই মাঝে আসা পুরনো তালিকা টিক উল্টে দিতে পারে না (loadList দেখুন)। */
+function isDoneStatus(s) { return /^(done|complete|completed|সম্পন্ন|শেষ)$/i.test(String(s || '').trim()); }
+
+// সরানোর পর এই তালিকাতেই থাকবে কি না
+function staysAfterMove(date) {
+  if (S.mode === 'day') return date === S.date;
+  if (S.mode === 'week') return date >= S.weekStart && date <= addDays(S.weekStart, 6);
+  if (S.mode === 'overdue') return date < todayKey();
+  return true;
+}
+
+// পর্দার গোনা (তারিখের স্ট্রিপ, বকেয়ার সংখ্যা) — তালিকা থেকে নতুন করে
+function recountLocal() {
+  if (S.mode === 'day') {
+    if (S.items.length) S.counts[S.date] = { t: S.items.length, d: S.items.filter(function (i) { return i.done; }).length };
+    else delete S.counts[S.date];
   }
-  busy[row] = false;
-  refreshAfterLocalChange();
-  S.insights = null;
-  scheduleReload();
+  if (S.mode === 'overdue') S.overdue = S.items.filter(function (i) { return !i.done; }).length;
 }
 
 function refreshAfterLocalChange() {
+  recountLocal();
   if (S.tab === 'tasks') { renderHero(); fillTasks(); }
   else if (S.tab === 'insights' && S.insights) fillInsights();
 }
 
-async function moveToToday(row) {
-  const i = findItem(row);
-  if (!i || busy[row]) return;
-  busy[row] = true;
-  S.items = S.items.filter(function (x) { return x !== i; });
-  S.overdue = Math.max(0, S.overdue - 1);
-  renderHero(); fillTasks();
+async function patchItems(list, patch, msg) {
+  list = list.filter(function (i) { return i && !busy[i.row]; });
+  if (!list.length) return false;
+  S.mut++;
+  const prev = list.map(function (i) { return Object.assign({}, i); });
+  const refs = prev.map(refOf);
+  const gone = [];
+  list.forEach(function (i) {
+    busy[i.row] = true;
+    if (patch.status !== undefined) { i.status = patch.status; i.done = isDoneStatus(patch.status); }
+    if (patch.priority !== undefined) i.priority = patch.priority;
+    if (patch.date !== undefined) { i.date = patch.date; if (!staysAfterMove(patch.date)) gone.push(i); }
+  });
+  if (gone.length) S.items = S.items.filter(function (x) { return gone.indexOf(x) === -1; });
+  refreshAfterLocalChange();
+  if (msg) toast(msg);
+
+  let ok = true;
   try {
-    await api('apiPatchTask', refOf(i), { date: todayKey() });
-    toast('আজকের তালিকায় আনা হয়েছে');
-  } catch (e) { toast('ব্যর্থ: ' + e.message); }
-  busy[row] = false;
+    let res;
+    if (list.length === 1) {
+      const it = await api('apiPatchTask', refs[0], patch);
+      it.was = refs[0].row;
+      res = { items: [it], failed: [] };
+    } else {
+      res = await api('apiBulkPatch', refs, patch);
+    }
+    const byWas = {};
+    res.items.forEach(function (it) { byWas[it.was] = it; delete it.was; });
+    list.forEach(function (i, n) { const it = byWas[prev[n].row]; if (it) Object.assign(i, it); });
+    if (res.failed.length) {
+      ok = false;
+      toast(bnNum(res.failed.length) + 'টা কাজ খুঁজে পাওয়া যায়নি — তালিকা নতুন করে আনা হচ্ছে');
+    }
+  } catch (e) {
+    ok = false;
+    list.forEach(function (i, n) { Object.assign(i, prev[n]); });
+    if (gone.length) S.items = S.items.concat(gone);
+    toast('ব্যর্থ: ' + e.message);
+  }
+  prev.forEach(function (p) { busy[p.row] = false; });
+  S.mut++;
+  S.insights = null;
+  refreshAfterLocalChange();
   scheduleReload();
+  return ok;
+}
+
+// মোছার পর শিটের নিচের রোগুলো উপরে ওঠে — পর্দার রো নম্বরও সেভাবে ঠিক করি
+function shiftRows(deleted) {
+  const d = (deleted || []).map(Number);
+  S.items.forEach(function (i) {
+    i.row -= d.filter(function (r) { return r < i.row; }).length;
+  });
+}
+
+async function deleteItems(list, asked) {
+  list = list.filter(function (i) { return i && !busy[i.row]; });
+  if (!list.length) return false;
+  if (!asked) {
+    const n = list.length;
+    const ok = await ask(n === 1 ? 'কাজটা মুছবেন?' : bnNum(n) + 'টা কাজ মুছবেন?',
+      (n === 1 ? '“' + list[0].task + '”' : 'বাছাই করা ' + bnNum(n) + 'টা কাজ') + ' স্থায়ীভাবে মুছে যাবে। Calendar event থাকলে সেটাও মুছবে।',
+      { ok: 'মুছে ফেলুন', danger: true });
+    if (!ok) return false;
+  }
+  S.mut++;
+  const refs = list.map(refOf);
+  refs.forEach(function (r) { busy[r.row] = true; });
+  const before = S.items.slice();
+  S.items = S.items.filter(function (x) { return list.indexOf(x) === -1; });
+  refreshAfterLocalChange();
+
+  let ok = true;
+  try {
+    let res;
+    if (refs.length === 1) { await api('apiDeleteTask', refs[0]); res = { deleted: [refs[0].row], failed: [] }; }
+    else res = await api('apiBulkDelete', refs);
+    shiftRows(res.deleted);
+    toast(res.failed.length ? bnNum(res.deleted.length) + 'টা মুছেছে, ' + bnNum(res.failed.length) + 'টা খুঁজে পাওয়া যায়নি'
+                            : (refs.length === 1 ? 'মুছে ফেলা হয়েছে' : bnNum(refs.length) + 'টা কাজ মুছে ফেলা হয়েছে'));
+  } catch (e) {
+    ok = false;
+    S.items = before;
+    toast('ব্যর্থ: ' + e.message);
+  }
+  refs.forEach(function (r) { busy[r.row] = false; });
+  S.mut++;
+  S.insights = null;
+  refreshAfterLocalChange();
+  scheduleReload();
+  return ok;
+}
+
+function toggle(row) {
+  const i = findItem(row);
+  if (!i || busy[i.row]) return;
+  const next = i.done ? (S.boot.statuses[0] || 'To Do') : 'Done';
+  patchItems([i], { status: next }, next === 'Done' ? 'সম্পন্ন ✓' : 'আবার শুরুতে ফেরানো হলো');
+}
+
+function moveToToday(row) {
+  const i = findItem(row);
+  if (!i || busy[i.row]) return;
+  patchItems([i], { date: todayKey() }, 'আজকের তালিকায় আনা হয়েছে');
+}
+
+/* ---------- নির্বাচন: একসাথে অনেক কাজ ---------- */
+function startSelect(row) {
+  S.sel = {};
+  if (row) S.sel[row] = true;
+  fillTasks();
+}
+function stopSelect() {
+  if (!S.sel) return;
+  S.sel = null;
+  if (S.tab === 'tasks') fillTasks(); else renderBulk();
+}
+function pickRow(row) {
+  if (!S.sel) return;
+  if (S.sel[row]) delete S.sel[row]; else S.sel[row] = true;
+  fillList(); renderBulk();
+}
+function pickAll() {
+  const vis = onScreenItems();
+  const all = vis.length && vis.every(function (i) { return S.sel[i.row]; });
+  S.sel = {};
+  if (!all) vis.forEach(function (i) { S.sel[i.row] = true; });
+  fillList(); renderBulk();
+}
+
+function renderBulk() {
+  const on = !!S.sel && S.tab === 'tasks' && !S.login;
+  document.body.classList.toggle('selecting', on);
+  const b = $('#bulk');
+  if (!b) return;
+  if (!on) { b.innerHTML = ''; return; }
+  const n = Object.keys(S.sel).length, vis = onScreenItems();
+  const all = vis.length && vis.every(function (i) { return S.sel[i.row]; });
+  const btn = function (act, icon, label, cls) {
+    return '<button class="' + (cls || '') + '" data-act="' + act + '"' + (n ? '' : ' disabled') + '>' + ic(icon, 18) + label + '</button>';
+  };
+  b.innerHTML =
+    '<div class="bulk-top"><span class="grow">' + (n ? bnNum(n) + 'টা কাজ বাছাই' : 'কাজে চাপ দিয়ে বাছুন') + '</span>' +
+      '<button data-act="sel-all">' + (all ? 'সব ছাড়ুন' : 'সব বাছুন') + '</button>' +
+      '<button data-act="sel-exit" aria-label="বন্ধ">' + ic('x', 14) + '</button></div>' +
+    '<div class="bulk-acts">' +
+      btn('bulk-done', 'check', 'Done', 'ok') + btn('bulk-todo', 'undo', 'To Do') + btn('bulk-status', 'tag', 'Status') +
+      btn('bulk-date', 'calendar', 'সরান') + btn('bulk-del', 'trash', 'মুছুন', 'del') +
+    '</div>';
+}
+
+async function bulkPatch(patch, msg) {
+  const list = selectedItems();
+  if (!list.length) return;
+  closeSheet();
+  stopSelect();
+  await patchItems(list, patch, msg.replace('%n', bnNum(list.length)));
+}
+
+// Status / তারিখ বাছার ছোট তালিকা (নিচের শিটে)
+function openChooser(kind) {
+  const n = selectedItems().length;
+  if (!n) return;
+  let body;
+  if (kind === 'status') {
+    body = S.boot.statuses.map(function (s) {
+      return '<button class="opt" style="--c:' + (STA[s] || '#64748B') + '" data-act="opt-status" data-v="' + esc(s) + '"><span class="dot"></span>' + esc(s) + '</button>';
+    }).join('');
+  } else {
+    const t = todayKey(), tm = addDays(t, 1), nw = S.boot.nextWorking;
+    const dates = [[t, 'আজ'], [tm, 'আগামীকাল']];
+    if (nw !== tm) dates.push([nw, 'পরের কর্মদিবস']);
+    body = dates.map(function (d) {
+      return '<button class="opt" style="--c:var(--brand)" data-act="opt-date" data-v="' + d[0] + '"><span class="dot"></span>' + d[1] + '<small>' + esc(shortDate(d[0])) + '</small></button>';
+    }).join('') +
+    '<div class="fld"><div class="lbl">অন্য তারিখ</div><div class="prow"><input type="date" id="optDate" class="inp" value="' + addDays(t, 2) + '">' +
+    '<button class="btn primary" data-act="opt-date-go">সরান</button></div></div>';
+  }
+  $('#sheet').innerHTML = '<div class="grab"></div><div class="sh-head"><h2>' + bnNum(n) + 'টা কাজ — ' + (kind === 'status' ? 'Status বদলান' : 'অন্য দিনে সরান') + '</h2>' +
+    '<button class="x" data-act="close" aria-label="বন্ধ">' + ic('x') + '</button></div>' + body;
+  openSheet();
 }
 
 async function quickAdd() {
@@ -1806,7 +2156,7 @@ function fillMore() {
       (AUTH ? '<button class="btn ghost sm" data-act="logout">লগআউট</button>' : '') + '</div></div>' +
     '<div class="panel"><a class="link" href="' + esc(S.boot.sheetUrl) + '" target="_blank" rel="noopener">' +
       ic('sheet') + '<span>Google Sheet খুলুন (ব্যাকএন্ড)</span>' + ic('ext', 16) + '</a></div>' +
-    '<div class="foot">Smart To-Do · v8.0</div>';
+    '<div class="foot">Smart To-Do · v9.0</div>';
 }
 
 /* ---------- নিরাপত্তা (শুধু মালিক দেখেন) ----------
@@ -2048,7 +2398,7 @@ function toast(msg) {
 /* ---------- ন্যাভিগেশন ---------- */
 function setTab(tab) {
   if (S.tab === tab) return;
-  S.tab = tab;
+  S.tab = tab; S.sel = null;
   window.scrollTo(0, 0);
   render();
   if (tab === 'tasks' && (S.stale || Date.now() - S.loadedAt > 60000)) loadList(true);
@@ -2056,7 +2406,7 @@ function setTab(tab) {
 
 function setMode(mode) {
   if (S.mode === mode) return;
-  S.mode = mode; S.filter = 'all';
+  S.mode = mode; S.filter = 'all'; S.sel = null;
   if (mode === 'week') S.weekStart = weekStartOf(S.date);
   if (mode !== 'search') S.items = [];
   render();
@@ -2064,7 +2414,7 @@ function setMode(mode) {
 }
 
 function pickDay(k) {
-  S.date = k;
+  S.date = k; S.sel = null;
   if (k < addDays(S.stripStart, 1) || k > addDays(S.stripStart, 12)) S.stripStart = addDays(k, -3);
   S.filter = 'all';
   loadList();
@@ -2098,6 +2448,36 @@ document.addEventListener('click', function (e) {
 
     case 'tab':        setTab(v); break;
     case 'mode':       setMode(v); break;
+    case 'side-mode':  setTab('tasks'); setMode(v); break;
+    case 'side-new':
+      if (S.tab === 'routine') openTplEditor(null);
+      else { setTab('tasks'); openEditor(null); }
+      break;
+
+    // নির্বাচন — একসাথে অনেক কাজ
+    case 'sel-mode':   if (S.sel) stopSelect(); else startSelect(); break;
+    case 'sel-exit':   stopSelect(); break;
+    case 'sel-all':    pickAll(); break;
+    case 'pick':       pickRow(Number(row)); break;
+    case 'bulk-done':  bulkPatch({ status: 'Done' }, '%nটা কাজ সম্পন্ন ✓'); break;
+    case 'bulk-todo':  bulkPatch({ status: S.boot.statuses[0] || 'To Do' }, '%nটা কাজ আবার বাকির তালিকায়'); break;
+    case 'bulk-status': openChooser('status'); break;
+    case 'bulk-date':  openChooser('date'); break;
+    case 'bulk-del': {
+      const list = selectedItems();
+      if (list.length) deleteItems(list).then(function (ok) { if (ok) stopSelect(); });
+      break;
+    }
+    case 'opt-status': bulkPatch({ status: v }, '%nটা কাজ → ' + v); break;
+    case 'opt-date':   bulkPatch({ date: v }, '%nটা কাজ সরানো হলো — ' + relLabel(v) + ', ' + shortDate(v)); break;
+    case 'opt-date-go': {
+      const d = ($('#optDate') || {}).value;
+      if (!d) { toast('তারিখ বাছুন'); break; }
+      bulkPatch({ date: d }, '%nটা কাজ সরানো হলো — ' + relLabel(d) + ', ' + shortDate(d));
+      break;
+    }
+    case 'all-done':      allDone(); break;
+    case 'overdue-today': overdueToday(); break;
     case 'refresh':    refresh(); break;
     case 'pick-day':   pickDay(el.dataset.k); break;
     case 'strip-prev': S.stripStart = addDays(S.stripStart, -7); S.date = addDays(S.date, -7); loadList(); break;
@@ -2164,6 +2544,45 @@ document.addEventListener('click', function (e) {
   }
 });
 
+async function allDone() {
+  const list = visibleItems().filter(function (i) { return !i.done; });
+  if (!list.length) return;
+  if (!(await ask('সব কাজ Done করবেন?', bnNum(list.length) + 'টা বাকি কাজ একসাথে সম্পন্ন হিসেবে চিহ্নিত হবে।', { ok: 'হ্যাঁ, সব Done' }))) return;
+  patchItems(list, { status: 'Done' }, bnNum(list.length) + 'টা কাজ সম্পন্ন ✓');
+}
+
+async function overdueToday() {
+  const list = visibleItems().filter(function (i) { return !i.done; });
+  if (!list.length) return;
+  if (!(await ask('সব বকেয়া আজকে আনবেন?', bnNum(list.length) + 'টা বকেয়া কাজ আজকের তালিকায় চলে আসবে।', { ok: 'হ্যাঁ, আজকে আনুন' }))) return;
+  patchItems(list, { date: todayKey() }, bnNum(list.length) + 'টা কাজ আজকের তালিকায় আনা হয়েছে');
+}
+
+/* ফোনে কাজের উপর আঙুল চেপে ধরলে নির্বাচন শুরু (সেই কাজটা বাছাই হয়ে) */
+let lpTimer = null, lpFired = false;
+document.addEventListener('pointerdown', function (e) {
+  const c = e.target.closest('.card[data-row]');
+  if (!c || S.sel || S.tab !== 'tasks' || e.target.closest('.chk, .mini') || e.button > 0) return;
+  lpFired = false;
+  clearTimeout(lpTimer);
+  lpTimer = setTimeout(function () {
+    lpFired = true;
+    startSelect(Number(c.dataset.row));
+    if (navigator.vibrate) { try { navigator.vibrate(15); } catch (x) {} }
+  }, 550);
+});
+['pointerup', 'pointercancel', 'pointerleave'].forEach(function (t) {
+  document.addEventListener(t, function () { clearTimeout(lpTimer); });
+});
+window.addEventListener('scroll', function () { clearTimeout(lpTimer); }, { passive: true });
+// চেপে ধরার পরের "ক্লিক"টা যেন কাজটা খুলে না ফেলে
+document.addEventListener('click', function (e) {
+  if (lpFired) { lpFired = false; e.stopPropagation(); e.preventDefault(); }
+}, true);
+document.addEventListener('contextmenu', function (e) {
+  if (e.target.closest('.card[data-row]') && (lpFired || S.sel)) e.preventDefault();
+});
+
 document.addEventListener('change', function (e) {
   if (e.target.id === 'pickDate' && e.target.value) {
     S.stripStart = addDays(e.target.value, -3);
@@ -2189,6 +2608,7 @@ document.addEventListener('keydown', function (e) {
   if (e.key === 'Escape') {
     if ($('#dlg').classList.contains('open')) closeDlg(false);
     else if ($('#sheet').classList.contains('open')) closeSheet();
+    else if (S.sel) stopSelect();
   }
 });
 
@@ -2199,9 +2619,10 @@ document.addEventListener('visibilitychange', function () {
 
 /* ---------- লগইন (মালিক ছাড়া অন্যদের জন্য) ---------- */
 function showLogin() {
-  // লগইন পাতার উপর PIN লক যেন না বসে — লগইনের পর লক নিজে আসে
+  // লগইন পাতার উপর PIN লক যেন না বসে — লগইনের পর লক নিজে আসে (GitHub সাইটের লক)
   if (window.appLockWaitLogin) appLockWaitLogin();
-  S.boot = null; S.viewKey = ''; S.security = null;
+  S.boot = null; S.viewKey = ''; S.security = null; S.sel = null;
+  document.body.classList.remove('selecting');
   if (!S.login) S.login = { step: 'email', email: '' };
   closeSheet();
   $('#nav').innerHTML = '';
@@ -2259,7 +2680,7 @@ async function loginVerify(btn) {
     S.login = null;
     toast('স্বাগতম 👋');
     boot();
-    // লগইনের পর PIN লক (উপরের AppLock অংশ)
+    // লগইনের পর PIN লক (GitHub সাইটের লক)
     if (window.appLockAfterLogin) appLockAfterLogin();
   } catch (e) { btn.classList.remove('loading'); formError(e.message); }
 }
@@ -2274,8 +2695,8 @@ async function logout() {
 
 /* ---------- শুরু ---------- */
 async function boot() {
-  // টোকেন নেই — সার্ভারকে না ডেকেই সরাসরি লগইন পাতা
-  if (!AUTH) { S.loading = false; showLogin(); return; }
+  // সাইটে টোকেন নেই — সার্ভারকে না ডেকেই সরাসরি লগইন পাতা (Apps Script-এ মালিক টোকেন ছাড়াই ঢোকেন)
+  if (IS_SITE && !AUTH) { S.loading = false; showLogin(); return; }
   document.body.classList.remove('is-login');
   S.loading = true; S.viewKey = '';
   render();
