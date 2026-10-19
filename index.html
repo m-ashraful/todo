@@ -1243,7 +1243,7 @@ function renderSide() {
       }
       return h;
     }).join('') +
-    '<div class="s-foot">' + (S.boot && S.boot.user ? esc(S.boot.user.email) + '<br>' : '') + 'Smart To-Do · v9.0</div>';
+    '<div class="s-foot">' + (S.boot && S.boot.user ? esc(S.boot.user.email) + '<br>' : '') + 'Smart To-Do · v9.1</div>';
 }
 
 // সব পাতার উপরে — logo, প্রতিষ্ঠানের নাম, অ্যাপের নাম আর কার To-Do (logo না এলে শুধু লেখা)
@@ -1659,6 +1659,9 @@ function refreshAfterLocalChange() {
   else if (S.tab === 'insights' && S.insights) fillInsights();
 }
 
+// একবারে সার্ভারে কতগুলো কাজ যায় (সার্ভারের সীমা BULK_MAX = 400)
+const BULK_CHUNK = 150;
+
 async function patchItems(list, patch, msg) {
   list = list.filter(function (i) { return i && !busy[i.row]; });
   if (!list.length) return false;
@@ -1674,30 +1677,47 @@ async function patchItems(list, patch, msg) {
   });
   if (gone.length) S.items = S.items.filter(function (x) { return gone.indexOf(x) === -1; });
   refreshAfterLocalChange();
-  if (msg) toast(msg);
+  // একটা কাজ হলে সাথে সাথে বার্তা; অনেকগুলো হলে "হয়েছে" বলা হয় সার্ভার নিশ্চিত করার পরেই
+  // (⚠️ FIX v9.1: আগে আগেভাগেই "৯৪০টা Done" দেখাত, অথচ সার্ভারে সব হতো না)
+  if (msg && list.length === 1) toast(msg);
+  else if (list.length > 1) toast('⏳ ' + bnNum(list.length) + 'টা কাজ আপডেট হচ্ছে…', true);
 
-  let ok = true;
-  try {
-    let res;
-    if (list.length === 1) {
-      const it = await api('apiPatchTask', refs[0], patch);
-      it.was = refs[0].row;
-      res = { items: [it], failed: [] };
-    } else {
-      res = await api('apiBulkPatch', refs, patch);
+  let ok = true, doneN = 0, failN = 0, err = null;
+  // অনেক কাজ হলে BULK_CHUNK করে ভাগে ভাগে — প্রতিটা কল সময়ের মধ্যে শেষ হয়
+  for (let s = 0; s < list.length; s += BULK_CHUNK) {
+    const e2 = Math.min(s + BULK_CHUNK, list.length);
+    try {
+      let res;
+      if (list.length === 1) {
+        const it = await api('apiPatchTask', refs[0], patch);
+        it.was = refs[0].row;
+        res = { items: [it], failed: [] };
+      } else {
+        res = await api('apiBulkPatch', refs.slice(s, e2), patch);
+      }
+      const byWas = {};
+      res.items.forEach(function (it) { byWas[it.was] = it; delete it.was; });
+      for (let n = s; n < e2; n++) { const it = byWas[prev[n].row]; if (it) Object.assign(list[n], it); }
+      doneN += res.items.length; failN += res.failed.length;
+      if (e2 < list.length) toast('⏳ ' + bnNum(e2) + '/' + bnNum(list.length) + 'টা হয়েছে…', true);
+    } catch (e) {
+      err = e;
+      // এই ভাগ আর পরের ভাগগুলো হয়নি — পর্দায় আগের অবস্থায় ফেরত
+      for (let n = s; n < list.length; n++) Object.assign(list[n], prev[n]);
+      const back = gone.filter(function (g) { return list.indexOf(g) >= s; });
+      if (back.length) S.items = S.items.concat(back);
+      break;
     }
-    const byWas = {};
-    res.items.forEach(function (it) { byWas[it.was] = it; delete it.was; });
-    list.forEach(function (i, n) { const it = byWas[prev[n].row]; if (it) Object.assign(i, it); });
-    if (res.failed.length) {
-      ok = false;
-      toast(bnNum(res.failed.length) + 'টা কাজ খুঁজে পাওয়া যায়নি — তালিকা নতুন করে আনা হচ্ছে');
-    }
-  } catch (e) {
+  }
+  if (err) {
     ok = false;
-    list.forEach(function (i, n) { Object.assign(i, prev[n]); });
-    if (gone.length) S.items = S.items.concat(gone);
-    toast('ব্যর্থ: ' + e.message);
+    toast(doneN ? bnNum(doneN) + 'টা হয়েছে, বাকি ' + bnNum(list.length - doneN) + 'টা হয়নি — ' + err.message
+                : 'ব্যর্থ: ' + err.message);
+  } else if (failN) {
+    ok = false;
+    toast(bnNum(doneN) + 'টা হয়েছে · ' + bnNum(failN) + 'টা কাজ খুঁজে পাওয়া যায়নি — তালিকা নতুন করে আনা হচ্ছে');
+  } else if (list.length > 1 && msg) {
+    toast(msg);
   }
   prev.forEach(function (p) { busy[p.row] = false; });
   S.mut++;
@@ -1727,25 +1747,36 @@ async function deleteItems(list, asked) {
   }
   S.mut++;
   const refs = list.map(refOf);
-  refs.forEach(function (r) { busy[r.row] = true; });
+  const busyRows = refs.map(function (r) { return r.row; });
+  busyRows.forEach(function (r) { busy[r] = true; });
   const before = S.items.slice();
   S.items = S.items.filter(function (x) { return list.indexOf(x) === -1; });
   refreshAfterLocalChange();
 
-  let ok = true;
-  try {
-    let res;
-    if (refs.length === 1) { await api('apiDeleteTask', refs[0]); res = { deleted: [refs[0].row], failed: [] }; }
-    else res = await api('apiBulkDelete', refs);
-    shiftRows(res.deleted);
-    toast(res.failed.length ? bnNum(res.deleted.length) + 'টা মুছেছে, ' + bnNum(res.failed.length) + 'টা খুঁজে পাওয়া যায়নি'
-                            : (refs.length === 1 ? 'মুছে ফেলা হয়েছে' : bnNum(refs.length) + 'টা কাজ মুছে ফেলা হয়েছে'));
-  } catch (e) {
-    ok = false;
-    S.items = before;
-    toast('ব্যর্থ: ' + e.message);
+  let ok = true, delN = 0, failN = 0;
+  if (refs.length > 1) toast('⏳ ' + bnNum(refs.length) + 'টা কাজ মোছা হচ্ছে…', true);
+  // অনেক হলে ভাগে ভাগে (BULK_CHUNK) — প্রতিটা ভাগের পর রো নম্বর ঠিক করে পরের ভাগ
+  for (let s = 0; s < refs.length; s += BULK_CHUNK) {
+    const part = refs.slice(s, s + BULK_CHUNK);
+    try {
+      let res;
+      if (refs.length === 1) { await api('apiDeleteTask', refs[0]); res = { deleted: [refs[0].row], failed: [] }; }
+      else res = await api('apiBulkDelete', part);
+      shiftRows(res.deleted);
+      // পরের ভাগের রো নম্বরও সরে গেছে — একই হিসাবে ঠিক করা
+      const d = (res.deleted || []).map(Number);
+      refs.slice(s + BULK_CHUNK).forEach(function (r) { r.row -= d.filter(function (x) { return x < r.row; }).length; });
+      delN += res.deleted.length; failN += res.failed.length;
+    } catch (e) {
+      ok = false;
+      if (!delN) S.items = before;   // কিছুই মোছেনি — সব ফেরত; কিছু মুছে থাকলে পরের রিলোড ঠিক করবে
+      toast(delN ? bnNum(delN) + 'টা মুছেছে, বাকিগুলো হয়নি — ' + e.message : 'ব্যর্থ: ' + e.message);
+      break;
+    }
   }
-  refs.forEach(function (r) { busy[r.row] = false; });
+  if (ok) toast(failN ? bnNum(delN) + 'টা মুছেছে, ' + bnNum(failN) + 'টা খুঁজে পাওয়া যায়নি'
+                      : (refs.length === 1 ? 'মুছে ফেলা হয়েছে' : bnNum(delN) + 'টা কাজ মুছে ফেলা হয়েছে'));
+  busyRows.forEach(function (r) { busy[r] = false; });
   S.mut++;
   S.insights = null;
   refreshAfterLocalChange();
@@ -2156,7 +2187,7 @@ function fillMore() {
       (AUTH ? '<button class="btn ghost sm" data-act="logout">লগআউট</button>' : '') + '</div></div>' +
     '<div class="panel"><a class="link" href="' + esc(S.boot.sheetUrl) + '" target="_blank" rel="noopener">' +
       ic('sheet') + '<span>Google Sheet খুলুন (ব্যাকএন্ড)</span>' + ic('ext', 16) + '</a></div>' +
-    '<div class="foot">Smart To-Do · v9.0</div>';
+    '<div class="foot">Smart To-Do · v9.1</div>';
 }
 
 /* ---------- নিরাপত্তা (শুধু মালিক দেখেন) ----------
@@ -2387,12 +2418,13 @@ $('#dlg').addEventListener('click', function (e) {
   else if (e.target.id === 'dlg') closeDlg(false);
 });
 
-function toast(msg) {
+// stay = কাজ চলাকালীন বার্তা — পরের বার্তা না আসা পর্যন্ত থাকে
+function toast(msg, stay) {
   const t = $('#toast');
   t.textContent = msg;
   t.classList.add('show');
   clearTimeout(window.__toastTimer);
-  window.__toastTimer = setTimeout(function () { t.classList.remove('show'); }, 2200);
+  if (!stay) window.__toastTimer = setTimeout(function () { t.classList.remove('show'); }, msg.length > 40 ? 4000 : 2200);
 }
 
 /* ---------- ন্যাভিগেশন ---------- */
