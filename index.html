@@ -626,9 +626,10 @@ function callServer(fn, args) {
     #app { max-width: 940px; padding: 0 28px; }
     .hero { border-radius: 22px; margin-top: 20px; padding: 16px 22px 20px; }
     .hero .brand, .hero .modes { display: none; }
-    .hero-top { justify-content: flex-end; height: 0; }
+    .hero-top { justify-content: flex-end; height: 0; position: relative; z-index: 2; }
     .hero-top .hbtn { position: relative; top: 2px; }
-    .hero-date { margin-top: 0; font-size: 14.5px; padding-right: 48px; }
+    /* ডানে 🔔 + রিফ্রেশ — তারিখের লাইন যেন বোতামের উপর না পড়ে */
+    .hero-date { margin-top: 0; font-size: 14.5px; padding-right: 96px; }
     main { padding: 16px 0 0; }
     .chips-row { margin: 0 0 4px; padding: 0 0 6px; flex-wrap: wrap; overflow: visible; }
     .card { padding: 13px 16px 13px 17px; transition: box-shadow .15s, transform .12s, opacity .2s; }
