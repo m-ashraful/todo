@@ -46,6 +46,8 @@ function callServer(fn, args) {
   });
 }
 </script>
+<!-- 🔔 নোটিফিকেশন widget (মূল কপি _shared/notify — বিল্ড কপি করে) -->
+<script src="ntf.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -177,6 +179,9 @@ function callServer(fn, args) {
     background: rgba(255,255,255,.14); display: grid; place-items: center; transition: transform .12s;
   }
   .hbtn:active { transform: scale(.92); }
+  .hacts { display: flex; gap: 8px; flex: none; }
+  /* 🔔 শুধু GitHub সাইটে (ntf.js থাকলে) দেখায় */
+  html:not(.ntf-on) [data-ntf-bell] { display: none !important; }
   .hbtn.spin .ic { animation: spin .9s linear infinite; }
   .hero-date { margin-top: 12px; font-size: 13px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; opacity: .95; }
   .pill-rel { background: rgba(255,255,255,.2); padding: 2px 10px; border-radius: 999px; font-weight: 700; font-size: 12px; }
@@ -1035,7 +1040,8 @@ const ICONS = {
   ext: '<path d="M15 3h6v6M10 14 21 3M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"/>',
   checksq: '<rect x="3" y="3" width="18" height="18" rx="4"/><path d="m8 12 3 3 5-6"/>',
   undo: '<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>',
-  tag: '<path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L2 12V2h10l8.6 8.6a2 2 0 0 1 0 2.8z"/><circle cx="7" cy="7" r="1.5"/>'
+  tag: '<path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L2 12V2h10l8.6 8.6a2 2 0 0 1 0 2.8z"/><circle cx="7" cy="7" r="1.5"/>',
+  bell: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>'
 };
 
 function ic(name, size) {
@@ -1214,8 +1220,9 @@ function renderHero() {
     body = '<div class="hero-sub"><b>' + t[0] + '</b><span>' + t[1] + '</span></div>';
   }
   $('#hero').innerHTML =
-    '<div class="hero-top">' + brandHead() +
-    '<button class="hbtn' + (S.refreshing ? ' spin' : '') + '" data-act="refresh" aria-label="রিফ্রেশ">' + ic('refresh') + '</button></div>' + body;
+    '<div class="hero-top">' + brandHead() + '<div class="hacts">' +
+    '<button class="hbtn" data-ntf-bell aria-label="নোটিফিকেশন">' + ic('bell') + '</button>' +
+    '<button class="hbtn' + (S.refreshing ? ' spin' : '') + '" data-act="refresh" aria-label="রিফ্রেশ">' + ic('refresh') + '</button></div></div>' + body;
   renderSide();
 }
 
@@ -2653,6 +2660,7 @@ document.addEventListener('visibilitychange', function () {
 function showLogin() {
   // লগইন পাতার উপর PIN লক যেন না বসে — লগইনের পর লক নিজে আসে (GitHub সাইটের লক)
   if (window.appLockWaitLogin) appLockWaitLogin();
+  if (window.NTF) NTF.stop();
   S.boot = null; S.viewKey = ''; S.security = null; S.sel = null;
   document.body.classList.remove('selecting');
   if (!S.login) S.login = { step: 'email', email: '' };
@@ -2719,11 +2727,20 @@ async function loginVerify(btn) {
 
 async function logout() {
   if (!(await ask('লগআউট করবেন?', 'আবার ঢুকতে ইমেইলে নতুন কোড লাগবে।', { ok: 'লগআউট' }))) return;
+  if (window.NTF) await NTF.logout();   // এই ডিভাইসের Push বন্ধ
   try { await api('apiLogout'); } catch (e) {}
   setAuth('');
   S.login = { step: 'email', email: S.boot && S.boot.user ? S.boot.user.email : '' };
   showLogin();
 }
+
+/* ---------- 🔔 নোটিফিকেশন ----------
+ * GitHub সাইটে ntf.js লোড হয় (window.NTF) — অ্যাপের ভেতরের তালিকা + এই ডিভাইসে Push।
+ * Apps Script-এর পাতায় ntf.js নেই, তখন ঘণ্টাও দেখায় না। সার্ভার: Api-র apiNotify → Notify ফাইল। */
+if (window.NTF) NTF.init({
+  app: 'todo', name: 'Daily Todo', ext: 'Telegram/Gmail', sw: 'ntf-sw.js', scope: './',
+  call: function (op, arg) { return api('apiNotify', op, arg); }
+});
 
 /* ---------- শুরু ---------- */
 async function boot() {
@@ -2735,6 +2752,7 @@ async function boot() {
   try {
     const b = await api('apiBoot', listParams());
     S.boot = b;
+    if (window.NTF) NTF.start();
     setOwnerName(b.ownerName);
     setHolidays(b.holidays.map(function (d) { return { date: d, reason: '' }; }));
     S.holidays = null;   // কারণসহ পুরো তালিকা "আরও" খুললে আসে
