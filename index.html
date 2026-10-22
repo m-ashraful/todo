@@ -608,9 +608,15 @@ function callServer(fn, args) {
   .opt .dot { width: 11px; height: 11px; border-radius: 50%; background: var(--c); flex: none; }
   .opt small { margin-left: auto; color: var(--ink-3); font-weight: 600; font-size: 12px; }
 
+  /* ডেভেলপারের নাম — ফোনে পাতার একদম নিচে; কম্পিউটারে সাইডবারের নিচে (s-foot) */
+  .dev-foot { text-align: center; font-size: 11.5px; color: var(--ink-3); padding: 20px 12px 6px; }
+  .dev-foot b { color: var(--ink-2); font-weight: 800; }
+  body.is-login .dev-foot { display: none; }
+
   /* ============ কম্পিউটার — বাঁয়ে সাইডবার, ডানে কাজ ============ */
   .side { display: none; }
   @media (min-width: 1000px) {
+    .dev-foot { display: none; }
     body { padding-bottom: 28px; padding-left: 268px; }
     body.is-login { padding-left: 0; }
     body.is-login .side { display: none !important; }
@@ -1018,6 +1024,7 @@ function callServer(fn, args) {
 <div id="app">
   <header class="hero" id="hero"></header>
   <main id="view"></main>
+  <footer class="dev-foot">Developed By: <b>Md. Ashraful Islam</b></footer>
 </div>
 
 <button class="fab" id="fab" data-act="fab" aria-label="নতুন"></button>
@@ -1340,7 +1347,7 @@ function renderSide() {
       }
       return h;
     }).join('') +
-    '<div class="s-foot">' + (S.boot && S.boot.user ? esc(S.boot.user.email) + '<br>' : '') + 'Smart To-Do · v9.3</div>');
+    '<div class="s-foot">' + (S.boot && S.boot.user ? esc(S.boot.user.email) + '<br>' : '') + 'Developed By: <b>Md. Ashraful Islam</b><br>Smart To-Do · v9.4</div>');
 }
 
 // সব পাতার উপরে — logo, প্রতিষ্ঠানের নাম, অ্যাপের নাম আর কার To-Do (logo না এলে শুধু লেখা)
