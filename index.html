@@ -510,7 +510,7 @@ function callServer(fn, args) {
   }
   .tool:active { transform: scale(.97); }
   .tool .ti { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; color: #fff; background: var(--c); flex: none; }
-  .tool b { display: block; font-size: 12.5px; line-height: 1.25; }
+  .tool b { display: block; font-size: 12.5px; line-height: 1.25; color: var(--ink); }   /* মোড়কের span-এ .tool span-এর ধূসর রং লেগে শিরোনামও ঝাপসা দেখাত */
   .tool span { display: block; font-size: 10.5px; color: var(--ink-3); line-height: 1.3; margin-top: 1px; }
   .tool.loading { opacity: .6; pointer-events: none; }
   .tool.loading .ti .ic { animation: spin .9s linear infinite; }
@@ -676,6 +676,17 @@ function callServer(fn, args) {
   /* ============ রিপোর্ট — অ্যাপের ভেতরে PDF-এর মতো পাতা ============
      .rp = সাদা কাগজের পাতা (অ্যাপে দেখা, PDF আর প্রিন্ট — তিন জায়গায় একই পাতা)।
      PDF বানানোর সময় পাতাটা পর্দার বাইরে A4-এর মাপে (.rp.fixed, 794px) আঁকা হয়। */
+  .rep-pick { margin-bottom: 12px; }
+  .rep-date { display: flex; align-items: center; gap: 8px; }
+  .rep-date .sbtn { width: 40px; height: 40px; }
+  .rep-date .sbtn:disabled { opacity: .35; }
+  .rep-d {
+    flex: 1; min-width: 0; position: relative; display: flex; align-items: center; justify-content: center; gap: 8px; height: 40px;
+    border-radius: 11px; background: var(--surface-2); color: var(--ink); font-size: 13.5px; cursor: pointer; padding: 0 10px;
+  }
+  .rep-d b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .rep-d input { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; border: 0; }
+  .rep-chips { display: flex; gap: 6px; margin-top: 8px; }
   .rp-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
   .rp-sub { font-size: 11px; font-weight: 800; letter-spacing: .12em; color: var(--ink-3); margin: 14px 2px 8px; }
   .rv { position: fixed; inset: 0; z-index: 70; background: #3B3F4C; display: none; flex-direction: column; }
@@ -1122,6 +1133,15 @@ function ic(name, size) {
 
 const $ = function (sel, el) { return (el || document).querySelector(sel); };
 
+// একই HTML হলে DOM আবার বানাই না। ব্যাকগ্রাউন্ড রিফ্রেশে (৫–১০ সেকেন্ড পরপর হতে পারে) পুরো তালিকা/বার নতুন করে
+// আঁকা হতো — আঙুল নামানো আর তোলার মাঝে বোতাম বদলে গেলে ব্রাউজার ক্লিকটাই ফেলে দেয় ("বোতাম কাজ করে না")।
+function setHTML(el, html) {
+  if (!el) return false;
+  if (el.__h === html && el.innerHTML === el.__s) return false;
+  el.innerHTML = html; el.__h = html; el.__s = el.innerHTML;
+  return true;
+}
+
 function esc(s) {
   return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
     return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
@@ -1289,10 +1309,10 @@ function renderHero() {
     }[S.tab];
     body = '<div class="hero-sub"><b>' + t[0] + '</b><span>' + t[1] + '</span></div>';
   }
-  $('#hero').innerHTML =
+  setHTML($('#hero'),
     '<div class="hero-top">' + brandHead() + '<div class="hacts">' +
     '<button class="hbtn" data-ntf-bell aria-label="নোটিফিকেশন">' + ic('bell') + '</button>' +
-    '<button class="hbtn' + (S.refreshing ? ' spin' : '') + '" data-act="refresh" aria-label="রিফ্রেশ">' + ic('refresh') + '</button></div></div>' + body;
+    '<button class="hbtn' + (S.refreshing ? ' spin' : '') + '" data-act="refresh" aria-label="রিফ্রেশ">' + ic('refresh') + '</button></div></div>' + body);
   renderSide();
 }
 
@@ -1303,7 +1323,7 @@ function renderSide() {
   if (S.login) { el.innerHTML = ''; return; }
   const tabs = [['tasks', 'কাজ', 'list'], ['routine', 'রুটিন', 'repeat'], ['insights', 'রিপোর্ট', 'chart'], ['more', 'আরও', 'grid']];
   const modes = [['day', 'দিন', 'sun'], ['week', 'সপ্তাহ', 'calendar'], ['overdue', 'বকেয়া', 'alert'], ['search', 'খুঁজুন', 'search']];
-  el.innerHTML =
+  setHTML(el,
     '<div class="s-brand">' +
       (ORG_LOGO ? '<img class="brand-logo" src="' + ORG_LOGO + '" alt="logo" onerror="this.remove()">' : '') +
       '<div><b>' + esc(ORG_NAME) + '</b><span>TO-DO LIST</span></div></div>' +
@@ -1320,7 +1340,7 @@ function renderSide() {
       }
       return h;
     }).join('') +
-    '<div class="s-foot">' + (S.boot && S.boot.user ? esc(S.boot.user.email) + '<br>' : '') + 'Smart To-Do · v9.1</div>';
+    '<div class="s-foot">' + (S.boot && S.boot.user ? esc(S.boot.user.email) + '<br>' : '') + 'Smart To-Do · v9.3</div>');
 }
 
 // সব পাতার উপরে — logo, প্রতিষ্ঠানের নাম, অ্যাপের নাম আর কার To-Do (logo না এলে শুধু লেখা)
@@ -1334,11 +1354,11 @@ function brandHead() {
 
 function renderNav() {
   const tabs = [['tasks', 'কাজ', 'list'], ['routine', 'রুটিন', 'repeat'], ['insights', 'রিপোর্ট', 'chart'], ['more', 'আরও', 'grid']];
-  $('#nav').innerHTML = tabs.map(function (t) {
+  setHTML($('#nav'), tabs.map(function (t) {
     return '<button class="' + (S.tab === t[0] ? 'on' : '') + '" data-act="tab" data-v="' + t[0] + '"><span class="pip">' + ic(t[2], 20) + '</span>' + t[1] + '</button>';
-  }).join('');
+  }).join(''));
   const fab = $('#fab');
-  fab.innerHTML = ic('plus', 26);
+  setHTML(fab, ic('plus', 26));
   fab.style.display = (S.tab === 'tasks' || S.tab === 'routine') ? '' : 'none';
 }
 
@@ -1388,29 +1408,29 @@ function fillToolbar() {
         '<span class="dw">' + BN_WEEK[dow(k)] + '</span><span class="dn">' + bnNum(+k.slice(8)) + '</span>' +
         '<span class="bar' + (c ? '' : ' none') + '"><i style="width:' + (c ? Math.round(c.d / c.t * 100) : 0) + '%"></i></span></button>';
     }
-    tb.innerHTML = '<div class="strip"><button class="sbtn" data-act="strip-prev" aria-label="আগের সপ্তাহ">' + ic('chevL') + '</button>' +
+    const moved = setHTML(tb, '<div class="strip"><button class="sbtn" data-act="strip-prev" aria-label="আগের সপ্তাহ">' + ic('chevL') + '</button>' +
       '<div class="days" id="days">' + days + '</div>' +
       '<button class="sbtn" data-act="strip-next" aria-label="পরের সপ্তাহ">' + ic('chevR') + '</button>' +
-      '<label class="sbtn cal" aria-label="তারিখ বাছুন">' + ic('calendar') + '<input type="date" id="pickDate" value="' + S.date + '"></label></div>';
-    const box = $('#days'), on = box.querySelector('.day.on');
+      '<label class="sbtn cal" aria-label="তারিখ বাছুন">' + ic('calendar') + '<input type="date" id="pickDate" value="' + S.date + '"></label></div>');
+    const box = $('#days'), on = moved && box.querySelector('.day.on');   // না বদলালে আঙুলে সরানো জায়গাতেই থাকে
     if (on) box.scrollLeft = on.offsetLeft - box.offsetLeft - box.clientWidth / 2 + on.clientWidth / 2;
   } else if (S.mode === 'week') {
-    tb.innerHTML = '<div class="wnav"><button class="sbtn" data-act="week-prev" aria-label="আগের সপ্তাহ">' + ic('chevL') + '</button>' +
+    setHTML(tb, '<div class="wnav"><button class="sbtn" data-act="week-prev" aria-label="আগের সপ্তাহ">' + ic('chevL') + '</button>' +
       '<b>' + esc(shortDate(S.weekStart)) + ' – ' + esc(shortDate(addDays(S.weekStart, 6))) + '</b>' +
-      '<button class="sbtn" data-act="week-next" aria-label="পরের সপ্তাহ">' + ic('chevR') + '</button></div>';
+      '<button class="sbtn" data-act="week-next" aria-label="পরের সপ্তাহ">' + ic('chevR') + '</button></div>');
   } else if (S.mode === 'overdue') {
-    tb.innerHTML = '<div class="info">' + ic('alert', 16) + '<span>তারিখ পেরিয়ে যাওয়া অসমাপ্ত কাজ। "আজ" চাপলে কাজটা আজকের তালিকায় চলে আসবে।</span>' +
-      (S.items.length > 1 && !S.sel ? '<button class="lbtn" data-act="overdue-today">সব আজকে আনুন</button>' : '') + '</div>';
+    setHTML(tb, '<div class="info">' + ic('alert', 16) + '<span>তারিখ পেরিয়ে যাওয়া অসমাপ্ত কাজ। "আজ" চাপলে কাজটা আজকের তালিকায় চলে আসবে।</span>' +
+      (S.items.length > 1 && !S.sel ? '<button class="lbtn" data-act="overdue-today">সব আজকে আনুন</button>' : '') + '</div>');
   } else if (!$('#q')) {
-    tb.innerHTML = '<div class="search">' + ic('search') +
-      '<input id="q" type="search" placeholder="কাজ, নোট বা গেস্ট খুঁজুন…" value="' + esc(S.q) + '" autocomplete="off"></div>';
+    setHTML(tb, '<div class="search">' + ic('search') +
+      '<input id="q" type="search" placeholder="কাজ, নোট বা গেস্ট খুঁজুন…" value="' + esc(S.q) + '" autocomplete="off"></div>');
     setTimeout(function () { const q = $('#q'); if (q) q.focus(); }, 60);
   }
 }
 
 function fillChips() {
   const box = $('#chips');
-  if (!S.items.length) { box.innerHTML = ''; return; }
+  if (!S.items.length) { setHTML(box, ''); return; }
   const byCat = {};
   S.items.forEach(function (i) { byCat[i.category] = (byCat[i.category] || 0) + 1; });
   const must = S.items.filter(function (i) { return i.priority === 'Must'; }).length;
@@ -1427,7 +1447,7 @@ function fillChips() {
   Object.keys(byCat).forEach(function (c) {
     if (S.boot && S.boot.categories.indexOf(c) === -1) h += chip(c, c, byCat[c], cc(c));
   });
-  box.innerHTML = h;
+  setHTML(box, h);
 }
 
 function visibleItems() {
@@ -1440,38 +1460,38 @@ function visibleItems() {
 
 function fillList() {
   const box = $('#list');
-  if (S.loading) { box.innerHTML = skel(4); return; }
+  if (S.loading) { setHTML(box, skel(4)); return; }
   if (S.error) {
-    box.innerHTML = emptyBox('⚠️', 'লোড ব্যর্থ', esc(S.error), '<button class="btn ghost sm" data-act="refresh">আবার চেষ্টা</button>');
+    setHTML(box, emptyBox('⚠️', 'লোড ব্যর্থ', esc(S.error), '<button class="btn ghost sm" data-act="refresh">আবার চেষ্টা</button>'));
     return;
   }
 
   if (S.mode === 'search') {
-    if (!S.q.trim()) { box.innerHTML = emptyBox('🔎', 'খুঁজুন', 'কাজের নাম, নোট, গেস্ট বা ক্যাটাগরি লিখুন'); return; }
+    if (!S.q.trim()) { setHTML(box, emptyBox('🔎', 'খুঁজুন', 'কাজের নাম, নোট, গেস্ট বা ক্যাটাগরি লিখুন')); return; }
     const vis = visibleItems();
-    box.innerHTML = vis.length ? listbar(bnNum(vis.length) + 'টা পাওয়া গেছে') + grouped(vis, {})
-                               : emptyBox('🤷', 'কিছু পাওয়া যায়নি', '“' + esc(S.q) + '” দিয়ে কোনো কাজ নেই');
+    setHTML(box, vis.length ? listbar(bnNum(vis.length) + 'টা পাওয়া গেছে') + grouped(vis, {})
+                               : emptyBox('🤷', 'কিছু পাওয়া যায়নি', '“' + esc(S.q) + '” দিয়ে কোনো কাজ নেই'));
     return;
   }
   if (S.mode === 'overdue') {
     const vis = visibleItems();
-    box.innerHTML = vis.length ? listbar(bnNum(vis.length) + 'টা বকেয়া') + grouped(vis, { move: true })
-                               : emptyBox('✨', 'কোনো বকেয়া নেই', 'আগের সব কাজ হয় শেষ, নয়তো সামনে সরানো হয়েছে');
+    setHTML(box, vis.length ? listbar(bnNum(vis.length) + 'টা বকেয়া') + grouped(vis, { move: true })
+                               : emptyBox('✨', 'কোনো বকেয়া নেই', 'আগের সব কাজ হয় শেষ, নয়তো সামনে সরানো হয়েছে'));
     return;
   }
   if (S.mode === 'week') {
     const vis = visibleItems();
-    box.innerHTML = (vis.length ? listbar(bnNum(vis.length) + 'টা কাজ · ' + bnNum(vis.filter(function (i) { return !i.done; }).length) + 'টা বাকি') : '') + weekList();
+    setHTML(box, (vis.length ? listbar(bnNum(vis.length) + 'টা কাজ · ' + bnNum(vis.filter(function (i) { return !i.done; }).length) + 'টা বাকি') : '') + weekList());
     return;
   }
 
   // দিনের তালিকা
   if (!S.items.length) {
-    box.innerHTML = emptyBox('🗒️', 'CHILL BOSS', esc(relLabel(S.date)) + ' এখনও কোন কাজ নেই');
+    setHTML(box, emptyBox('🗒️', 'CHILL BOSS', esc(relLabel(S.date)) + ' এখনও কোন কাজ নেই'));
     return;
   }
   const vis = visibleItems();
-  if (!vis.length) { box.innerHTML = emptyBox('🧐', 'এই ফিল্টারে কিছু নেই', ''); return; }
+  if (!vis.length) { setHTML(box, emptyBox('🧐', 'এই ফিল্টারে কিছু নেই', '')); return; }
 
   const pending = vis.filter(function (i) { return !i.done; });
   const done    = vis.filter(function (i) { return i.done; });
@@ -1488,7 +1508,7 @@ function fillList() {
          '<span class="act">' + (S.doneOpen ? 'Hide' : 'Show') + '</span></div>';
     if (S.doneOpen) h += done.map(function (i) { return card(i, {}); }).join('');
   }
-  box.innerHTML = h;
+  setHTML(box, h);
 }
 
 // তালিকার উপরের সারি — সারসংক্ষেপ আর "নির্বাচন" (একসাথে অনেক কাজ Done/Status/সরানো/মোছা)
@@ -1891,6 +1911,7 @@ function pickRow(row) {
   fillList(); renderBulk();
 }
 function pickAll() {
+  if (S.loading) { toast('তালিকা লোড হচ্ছে… এক মুহূর্ত পরে চাপুন'); return; }
   const vis = onScreenItems();
   const all = vis.length && vis.every(function (i) { return S.sel[i.row]; });
   S.sel = {};
@@ -1903,20 +1924,20 @@ function renderBulk() {
   document.body.classList.toggle('selecting', on);
   const b = $('#bulk');
   if (!b) return;
-  if (!on) { b.innerHTML = ''; return; }
+  if (!on) { setHTML(b, ''); return; }
   const n = Object.keys(S.sel).length, vis = onScreenItems();
   const all = vis.length && vis.every(function (i) { return S.sel[i.row]; });
   const btn = function (act, icon, label, cls) {
     return '<button class="' + (cls || '') + '" data-act="' + act + '"' + (n ? '' : ' disabled') + '>' + ic(icon, 18) + label + '</button>';
   };
-  b.innerHTML =
+  setHTML(b,
     '<div class="bulk-top"><span class="grow">' + (n ? bnNum(n) + 'টা কাজ বাছাই' : 'কাজে চাপ দিয়ে বাছুন') + '</span>' +
       '<button data-act="sel-all">' + (all ? 'সব ছাড়ুন' : 'সব বাছুন') + '</button>' +
       '<button data-act="sel-exit" aria-label="বন্ধ">' + ic('x', 14) + '</button></div>' +
     '<div class="bulk-acts">' +
       btn('bulk-done', 'check', 'Done', 'ok') + btn('bulk-todo', 'undo', 'To Do') + btn('bulk-status', 'tag', 'Status') +
       btn('bulk-date', 'calendar', 'সরান') + btn('bulk-del', 'trash', 'মুছুন', 'del') +
-    '</div>';
+    '</div>');
 }
 
 async function bulkPatch(patch, msg) {
@@ -2202,7 +2223,7 @@ function fillInsights() {
     (I.upcoming.length ? '<div class="panel"><h3>' + ic('calendar') + ' সামনের ৭ দিন<small>Meeting / Event / Call</small></h3>' + I.upcoming.map(miniRow).join('') + '</div>' : '') +
     (I.stuck.length ? '<div class="panel"><h3>' + ic('alert') + ' বারবার পিছিয়ে যাচ্ছে<small>আজ করুন বা বাদ দিন</small></h3>' + I.stuck.map(miniRow).join('') + '</div>' : '') +
     '<div class="panel"><h3>' + ic('file') + ' রিপোর্ট (PDF)<small>অ্যাপেই দেখুন · ডাউনলোড · শেয়ার · প্রিন্ট</small></h3>' +
-      '<div class="prow"><input type="date" id="printDate" class="inp" max="' + todayKey() + '" value="' + (S.date > todayKey() ? todayKey() : S.date) + '"></div>' +
+      repDatePicker() +
       '<div class="rp-btns">' + Object.keys(REPORTS).map(repBtn).join('') + '</div>' +
       '<div class="rp-sub">ইমেইল / TELEGRAM-এ পাঠানো</div>' +
       '<div class="tools">' + toolBtn('eod') + toolBtn('weekly') + toolBtn('sheetReport') + '</div></div>';
@@ -2435,6 +2456,32 @@ const REPORTS = {
   monthly: ['Monthly Review', 'পুরো মাসের হিসাব', 'calendar', '#DB2777']
 };
 let RV = null;   // { kind, date, data }
+
+/* রিপোর্টের তারিখ — S.repDate-এ থাকে (আগে শুধু ঘরের মানে থাকত; পাতা আবার আঁকা হলে বাছাই করা তারিখ
+ * মুছে আজকেরটায় ফিরে যেত — "তারিখ ফিল্টার কাজ করে না")। ◀ ▶ আর আজ/গতকাল দিয়েও বদলায়। */
+function repDate() {
+  const t = todayKey();
+  return S.repDate && S.repDate <= t ? S.repDate : (S.date > t ? t : S.date);
+}
+function setRepDate(k) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(k))) return;
+  S.repDate = k > todayKey() ? todayKey() : k;
+  const p = $('#repPick');
+  if (p) p.outerHTML = repDatePicker();
+}
+function repDatePicker() {
+  const k = repDate(), t = todayKey(), y = addDays(t, -1);
+  const chip = function (v, label) { return '<button class="chip' + (k === v ? ' on' : '') + '" data-act="rep-day" data-v="' + v + '">' + label + '</button>'; };
+  return '<div id="repPick" class="rep-pick">' +
+    '<div class="rep-date">' +
+      '<button class="sbtn" data-act="rep-day" data-v="prev" aria-label="আগের দিন">' + ic('chevL') + '</button>' +
+      // ঘরটা পুরো লেখার উপর অদৃশ্যভাবে বসানো — যেখানেই চাপুন, ফোনের ক্যালেন্ডার খোলে
+      '<label class="rep-d" onclick="var i=this.querySelector(\x27input\x27);try{i.showPicker()}catch(x){}">' + ic('calendar', 16) + '<b>' + esc(longDate(k)) + '</b>' +
+        '<input type="date" id="printDate" max="' + t + '" value="' + k + '" aria-label="রিপোর্টের তারিখ"></label>' +
+      '<button class="sbtn" data-act="rep-day" data-v="next" aria-label="পরের দিন"' + (k >= t ? ' disabled' : '') + '>' + ic('chevR') + '</button>' +
+    '</div>' +
+    '<div class="rep-chips">' + chip(t, 'আজ') + chip(y, 'গতকাল') + '</div></div>';
+}
 
 function repBtn(kind) {
   const t = REPORTS[kind];
@@ -2786,7 +2833,7 @@ document.addEventListener('click', function (e) {
   if (!el) return;
   const a = el.dataset.act, v = el.dataset.v, row = el.dataset.row;
   // সার্ভার থেকে কনফিগ আসার আগে শুধু লগইনের বোতাম চলে
-  if (!S.boot && a.indexOf('lg-') !== 0) return;
+  if (!S.boot && a.indexOf('lg-') !== 0) { if (!S.login) toast('লোড হচ্ছে… এক মুহূর্ত'); return; }
 
   switch (a) {
     case 'lg-send':   loginSend(el); break;
@@ -2888,7 +2935,8 @@ document.addEventListener('click', function (e) {
     case 'sec-sess-del': secRevoke(el.dataset.id); break;
     case 'sec-sess-all': secRevokeOthers(el); break;
     case 'sec-reload':   S.security = null; fillMore(); break;
-    case 'report':  openReport(el.dataset.kind, ($('#printDate') || {}).value || todayKey()); break;
+    case 'report':  openReport(el.dataset.kind, repDate()); break;
+    case 'rep-day': setRepDate(v === 'prev' ? addDays(repDate(), -1) : v === 'next' ? addDays(repDate(), 1) : v); break;
     case 'rv-close': closeReport(); break;
     case 'rv-step':  stepReport(Number(v)); break;
     case 'rv-pdf':   rvPdf(el, false); break;
@@ -2937,6 +2985,7 @@ document.addEventListener('contextmenu', function (e) {
 });
 
 document.addEventListener('change', function (e) {
+  if (e.target.id === 'printDate' && e.target.value) setRepDate(e.target.value);
   if (e.target.id === 'pickDate' && e.target.value) {
     S.stripStart = addDays(e.target.value, -3);
     pickDay(e.target.value);
@@ -2949,6 +2998,7 @@ document.addEventListener('change', function (e) {
 
 let searchTimer = null;
 document.addEventListener('input', function (e) {
+  if (e.target.id === 'printDate' && e.target.value) { S.repDate = e.target.value; return; }   // change-এ পুরো ঘর আবার আঁকা হয়
   if (e.target.id !== 'q') return;
   clearTimeout(searchTimer);
   searchTimer = setTimeout(function () { S.q = e.target.value; loadList(); }, 350);
@@ -3044,6 +3094,7 @@ async function logout() {
   if (!(await ask('লগআউট করবেন?', 'আবার ঢুকতে ইমেইলে নতুন কোড লাগবে।', { ok: 'লগআউট' }))) return;
   if (window.NTF) await NTF.logout();   // এই ডিভাইসের Push বন্ধ
   try { await api('apiLogout'); } catch (e) {}
+  bootCacheClear();
   setAuth('');
   S.login = { step: 'email', email: S.boot && S.boot.user ? S.boot.user.email : '' };
   showLogin();
@@ -3058,28 +3109,55 @@ if (window.NTF) NTF.init({
 });
 
 /* ---------- শুরু ---------- */
+// শেষবারের boot তথ্য এই ব্রাউজারে — লগইন টোকেনের সাথে বাঁধা (অন্য লগইনে মিলবে না), লগআউটে মুছে যায়
+const BOOT_CACHE = 'todo_boot_v1';
+function bootCacheGet() {
+  try {
+    const c = JSON.parse(localStorage.getItem(BOOT_CACHE) || 'null');
+    return c && c.k === String(AUTH).slice(-16) && c.b && c.b.user ? c.b : null;
+  } catch (e) { return null; }
+}
+function bootCachePut(b) {
+  try { localStorage.setItem(BOOT_CACHE, JSON.stringify({ k: String(AUTH).slice(-16), b: b })); } catch (e) {}
+}
+function bootCacheClear() { try { localStorage.removeItem(BOOT_CACHE); } catch (e) {} }
+
 async function boot() {
   // সাইটে টোকেন নেই — সার্ভারকে না ডেকেই সরাসরি লগইন পাতা (Apps Script-এ মালিক টোকেন ছাড়াই ঢোকেন)
   if (IS_SITE && !AUTH) { S.loading = false; showLogin(); return; }
   document.body.classList.remove('is-login');
   S.loading = true; S.viewKey = '';
-  render();
+  // আগেরবারের তথ্য (এই ফোনে রাখা) দিয়ে অ্যাপ সাথে সাথে চালু — সার্ভারের ২–৪ সেকেন্ডের অপেক্ষায় সব বোতাম
+  // মরা থাকত। নতুন তথ্য এলে নিঃশব্দে বদলে যায়; এর মাঝে টিক/বদল হলে সেটা হারায় না (S.mut)।
+  const cached = bootCacheGet();
+  const fromCache = !!(cached && cached.today === S.date);
+  if (fromCache) {
+    S.boot = cached;
+    setOwnerName(cached.ownerName);
+    setHolidays((cached.holidays || []).map(function (d) { return { date: d, reason: '' }; }));
+    render(); applyList(cached.list || { items: [] });
+  } else render();
+  const want = JSON.stringify(listParams()), mut0 = S.mut;
   try {
     const b = await api('apiBoot', listParams());
+    bootCachePut(b);
     S.boot = b;
     if (window.NTF) NTF.start();
     setOwnerName(b.ownerName);
     setHolidays(b.holidays.map(function (d) { return { date: d, reason: '' }; }));
     S.holidays = null;   // কারণসহ পুরো তালিকা "আরও" খুললে আসে
-    if (b.today !== S.date) {   // ফোনের ঘড়ি আর সার্ভারের দিন না মিললে সার্ভারেরটা
+    if (b.today !== S.date && !fromCache) {   // ফোনের ঘড়ি আর সার্ভারের দিন না মিললে সার্ভারেরটা
       S.date = b.today; S.stripStart = addDays(b.today, -3); S.weekStart = weekStartOf(b.today);
       render(); loadList();
+    } else if (want !== JSON.stringify(listParams()) || mut0 !== S.mut || anyBusy()) {
+      render(); loadList(true);   // অপেক্ষার মাঝে অন্য দিন/মোডে গেছেন বা কিছু বদলেছেন — সেই অনুযায়ী নতুন করে
     } else {
       render(); applyList(b.list);
     }
   } catch (e) {
     S.loading = false;
-    if (/AUTH_REQUIRED/.test(e.message)) { setAuth(''); showLogin(); return; }
+    if (/AUTH_REQUIRED/.test(e.message)) { bootCacheClear(); S.boot = null; setAuth(''); showLogin(); return; }
+    if (fromCache) { toast('সার্ভারে পৌঁছানো যায়নি — আগের তথ্য দেখানো হচ্ছে। ↻ চেপে আবার চেষ্টা করুন'); return; }
     $('#hero').innerHTML = '<div class="hero-top">' + brandHead() + '</div>';
     $('#view').innerHTML = emptyBox('🔒', 'অ্যাপ খোলা যায়নি', esc(e.message),
       '<button class="btn ghost sm" onclick="boot()">আবার চেষ্টা</button>');
