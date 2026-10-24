@@ -1024,7 +1024,7 @@ function callServer(fn, args) {
 <div id="app">
   <header class="hero" id="hero"></header>
   <main id="view"></main>
-  <footer class="dev-foot">Developed By: <b>Md. Ashraful Islam</b></footer>
+  <footer class="dev-foot"><svg class="dev-mk" viewBox="0 0 100 100" aria-hidden="true" style="width:1.4em;height:1.4em;vertical-align:-.34em;margin-right:5px;display:inline-block"><defs><linearGradient id="devmk-mytodo1" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="100" y2="100"><stop offset="0" stop-color="#6366f1"/><stop offset=".5" stop-color="#8b5cf6"/><stop offset="1" stop-color="#d946ef"/></linearGradient></defs><path d="M8 18H92M16 88 40 18 64 88M84 18V88" fill="none" stroke="url(#devmk-mytodo1)" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><circle cx="40" cy="64" r="8" fill="url(#devmk-mytodo1)"/></svg>Developed By: <b>Md. Ashraful Islam</b></footer>
 </div>
 
 <button class="fab" id="fab" data-act="fab" aria-label="নতুন"></button>
@@ -1347,7 +1347,7 @@ function renderSide() {
       }
       return h;
     }).join('') +
-    '<div class="s-foot">' + (S.boot && S.boot.user ? esc(S.boot.user.email) + '<br>' : '') + 'Developed By: <b>Md. Ashraful Islam</b><br>Smart To-Do · v9.4</div>');
+    '<div class="s-foot">' + (S.boot && S.boot.user ? esc(S.boot.user.email) + '<br>' : '') + '<svg class="dev-mk" viewBox="0 0 100 100" aria-hidden="true" style="width:1.4em;height:1.4em;vertical-align:-.34em;margin-right:5px;display:inline-block"><defs><linearGradient id="devmk-mytodo2" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="100" y2="100"><stop offset="0" stop-color="#6366f1"/><stop offset=".5" stop-color="#8b5cf6"/><stop offset="1" stop-color="#d946ef"/></linearGradient></defs><path d="M8 18H92M16 88 40 18 64 88M84 18V88" fill="none" stroke="url(#devmk-mytodo2)" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><circle cx="40" cy="64" r="8" fill="url(#devmk-mytodo2)"/></svg>Developed By: <b>Md. Ashraful Islam</b><br>Smart To-Do · v9.4</div>');
 }
 
 // সব পাতার উপরে — logo, প্রতিষ্ঠানের নাম, অ্যাপের নাম আর কার To-Do (logo না এলে শুধু লেখা)
