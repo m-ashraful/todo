@@ -190,7 +190,13 @@ function callServer(fn, args) {
   .ringwrap b { position: absolute; inset: 0; display: grid; place-items: center; font-weight: 800; font-size: 14px; }
   .ring circle { transition: stroke-dashoffset .5s ease; }
   .hs { display: flex; gap: 6px; flex: 1; }
-  .hs div { flex: 1; background: rgba(255,255,255,.11); border-radius: 12px; padding: 7px 6px; text-align: center; }
+  .hs button {
+    flex: 1; border: 0; color: #fff; background: rgba(255,255,255,.11); border-radius: 12px; padding: 7px 6px; text-align: center;
+    transition: background .15s, transform .12s, box-shadow .15s;
+  }
+  .hs button:hover { background: rgba(255,255,255,.18); }
+  .hs button:active { transform: scale(.97); }
+  .hs button.on { background: rgba(255,255,255,.26); box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.75); }
   .hs b { display: block; font-size: 18px; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1.15; }
   .hs span { font-size: 10.5px; opacity: .8; }
   .hero-sub { margin-top: 12px; display: flex; flex-direction: column; }
@@ -726,18 +732,13 @@ function callServer(fn, args) {
   .s-it.on .tx b { color: var(--brand); }
   .s-it .badge { margin-left: 0; }
   .s-foot { margin-top: auto; padding-top: 16px; }
-  .s-me {
-    display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: 14px;
-    background: var(--surface-2); border: 1px solid var(--line);
-  }
-  .s-me .av {
-    width: 36px; height: 36px; border-radius: 50%; flex: none; display: grid; place-items: center; color: #3B2304;
-    background: linear-gradient(135deg, #FDE68A, #F59E0B); box-shadow: inset 0 0 0 1px rgba(255,255,255,.45);
-  }
-  .s-me .tx { min-width: 0; }
-  .s-me b { display: block; font-size: 13px; font-weight: 800; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .s-me small { display: block; font-size: 11px; color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .s-dev { padding: 10px 6px 0; font-size: 11px; color: var(--ink-3); line-height: 1.6; }
+  /* কার To-Do — সোনালি pill, ব্র্যান্ডের নিচে একটু বড় করে */
+  .s-owner { padding: 14px 4px 0; }
+  .s-owner .owner { font-size: 13px; padding: 4px 14px 4px 4px; max-width: 100%; overflow: hidden; text-overflow: ellipsis;
+                    box-shadow: 0 6px 18px -6px rgba(245,158,11,.85), inset 0 0 0 1px rgba(255,255,255,.5); }
+  .s-owner .owner i { width: 22px; height: 22px; }
+  .s-mail { padding: 0 6px; font-size: 11.5px; color: var(--ink-3); word-break: break-all; }
+  .s-dev { padding: 8px 6px 0;font-size: 11px; color: var(--ink-3); line-height: 1.6; }
   .s-dev b { color: var(--ink-2); font-weight: 800; }
 
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
@@ -1425,8 +1426,10 @@ function renderHero() {
     body =
       '<div class="hero-date">' + label + '</div>' +
       '<div class="hero-stats"><div class="ringwrap">' + ring(S.loading ? 0 : p, 60, 7, true) + '<b>' + n(p + '%') + '</b></div>' +
-      '<div class="hs"><div><b>' + n(total) + '</b><span>মোট</span></div><div><b>' + n(done) + '</b><span>Done</span></div>' +
-      '<div><b>' + n(total - done) + '</b><span>বাকি</span></div></div></div>' +
+      // ঘরে চাপলে নিচের তালিকা সেই কাজগুলোতে ছাঁকা হয় (আবার চাপলে সব)
+      '<div class="hs">' + [['all', total, 'মোট'], ['done', done, 'Done'], ['left', total - done, 'বাকি']].map(function (s) {
+        return '<button class="' + (S.filter === s[0] && s[0] !== 'all' ? 'on' : '') + '" data-act="stat" data-v="' + s[0] + '"><b>' + n(s[1]) + '</b><span>' + s[2] + '</span></button>';
+      }).join('') + '</div></div>' +
       '<div class="modes">' + modes.map(function (m) {
         return '<button class="' + (S.mode === m[0] ? 'on' : '') + '" data-act="mode" data-v="' + m[0] + '"><span class="mi">' + ic(m[2], 15) + '</span>' + m[1] +
           (m[0] === 'overdue' && S.overdue ? '<span class="badge">' + S.overdue + '</span>' : '') + '</button>';
@@ -1458,6 +1461,7 @@ function renderSide() {
     '<div class="s-brand">' +
       (ORG_LOGO ? '<img class="brand-logo" src="' + ORG_LOGO + '" alt="logo" onerror="this.remove()">' : '') +
       '<div><b>' + esc(ORG_NAME) + '</b><span>TO-DO LIST</span></div></div>' +
+    '<div class="s-owner"><span class="owner"><i>' + ic('user', 13) + '</i>' + esc(OWNER_NAME) + '</span></div>' +
     '<button class="s-new" data-act="side-new">' + ic('plus', 18) + (S.tab === 'routine' ? 'নতুন রুটিন' : 'নতুন কাজ') + '</button>' +
     '<div class="s-lbl">মেনু</div>' +
     tabs.map(function (t) {
@@ -1465,8 +1469,7 @@ function renderSide() {
         '<span class="tile">' + ic(t[2], 18) + '</span><span class="tx"><b>' + t[1] + '</b><small>' + t[3] + '</small></span>' +
         (t[0] === 'tasks' && S.overdue ? '<span class="badge" title="বকেয়া">' + S.overdue + '</span>' : '') + '</button>';
     }).join('') +
-    '<div class="s-foot"><div class="s-me"><span class="av">' + ic('user', 17) + '</span><span class="tx"><b>' + esc(OWNER_NAME) + '</b>' +
-      (S.boot && S.boot.user ? '<small>' + esc(S.boot.user.email) + '</small>' : '') + '</span></div>' +
+    '<div class="s-foot">' + (S.boot && S.boot.user ? '<div class="s-mail">' + esc(S.boot.user.email) + '</div>' : '') +
     '<div class="s-dev"><svg class="dev-mk" viewBox="0 0 100 100" aria-hidden="true" style="width:1.4em;height:1.4em;vertical-align:-.34em;margin-right:5px;display:inline-block"><defs><linearGradient id="devmk-mytodo2" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="100" y2="100"><stop offset="0" stop-color="#6366f1"/><stop offset=".5" stop-color="#8b5cf6"/><stop offset="1" stop-color="#d946ef"/></linearGradient></defs><path d="M8 18H92M16 88 40 18 64 88M84 18V88" fill="none" stroke="url(#devmk-mytodo2)" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><circle cx="40" cy="64" r="8" fill="url(#devmk-mytodo2)"/></svg>Developed By: <b>Md. Ashraful Islam</b><br>Smart To-Do · v9.7</div></div>');
 }
 
@@ -1584,6 +1587,8 @@ function fillChips() {
 function filterHit(i, f) {
   if (f === 'all') return true;
   if (f === 'must') return i.priority === 'Must';
+  if (f === 'done') return i.done;
+  if (f === 'left') return !i.done;
   if (f.indexOf('st:') === 0) return !i.done && i.status === f.slice(3);
   return i.category === f;
 }
@@ -2212,7 +2217,7 @@ function openChooser(kind, items) {
 async function quickAdd() {
   const el = $('#quick'), btn = $('#addBtn');
   const text = el.value.trim();
-  if (!text) { el.focus(); return; }
+  if (!text) return openEditor(null);   // খালি ঘরে + = পুরো ফর্মে নতুন কাজ
   btn.disabled = true;
   try {
     const it = await api('apiQuickAdd', text);
@@ -3128,7 +3133,13 @@ document.addEventListener('click', function (e) {
     case 'strip-next': S.stripStart = addDays(S.stripStart, 7);  S.date = addDays(S.date, 7);  loadList(); break;
     case 'week-prev':  S.weekStart = addDays(S.weekStart, -7); loadList(); break;
     case 'week-next':  S.weekStart = addDays(S.weekStart, 7);  loadList(); break;
-    case 'filter':     S.filter = v; fillTasks(); break;
+    case 'filter':     S.filter = v; renderHero(); fillTasks(); break;
+    case 'stat':
+      S.filter = S.filter === v ? 'all' : v;
+      if (S.filter === 'done') S.doneOpen = true;
+      renderHero(); fillTasks();
+      { const l = $('#chips') || $('#list'); if (l && l.getBoundingClientRect().top > innerHeight * .6) l.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+      break;
     case 'done-sec':   S.doneOpen = !S.doneOpen; fillList(); break;
     case 'toggle':     toggle(Number(row)); break;
     case 'move':       moveToToday(Number(row)); break;
