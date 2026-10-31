@@ -1664,10 +1664,16 @@ function fillList() {
     h += '<div class="sec"><span>' + staLabel('Waiting') + ' ' + lblNum(waiting.length) + '</span><span class="sub">অন্যের উত্তরের অপেক্ষা</span><span class="rule"></span></div>' +
          waiting.map(function (i) { return card(i, {}); }).join('');
   }
-  if (!working.length && !todo.length && !waiting.length) {
-    h += emptyBox('🎉', 'CONGRATULATIONS', 'সব কাজ সম্পন্ন হয়েছে');
+  // অভিনন্দন শুধু যখন দিনের সত্যিই সব কাজ শেষ — "Done" ছাঁকনিতে বাকি কাজ লুকানো থাকে, তখন নয়
+  if (!working.length && !todo.length && !waiting.length && S.filter !== 'done') {
+    h += S.items.every(function (i) { return i.done; })
+      ? emptyBox('🎉', 'CONGRATULATIONS', 'সব কাজ সম্পন্ন হয়েছে')
+      : emptyBox('✅', 'এখানে বাকি কিছু নেই', 'এই ছাঁকনির সব কাজ শেষ — বাকি কাজ দেখতে "সব" চাপুন');
   }
-  if (done.length) {
+  if (done.length && S.filter === 'done') {
+    h += '<div class="sec"><span>সম্পন্ন ' + bnNum(done.length) + '</span><span class="rule"></span></div>' +
+         done.map(function (i) { return card(i, {}); }).join('');
+  } else if (done.length) {
     h += '<div class="sec tap" data-act="done-sec"><span>সম্পন্ন ' + bnNum(done.length) + '</span><span class="rule"></span>' +
          '<span class="act">' + (S.doneOpen ? 'Hide' : 'Show') + '</span></div>';
     if (S.doneOpen) h += done.map(function (i) { return card(i, {}); }).join('');
@@ -1685,7 +1691,7 @@ function listbar(txt) {
 // এই মুহূর্তে পর্দায় যে কাজগুলো দেখা যাচ্ছে ("সব বাছুন" এগুলোই বাছে — লুকানো সম্পন্নগুলো নয়)
 function onScreenItems() {
   const vis = visibleItems();
-  if (S.mode === 'day' && !S.doneOpen) return vis.filter(function (i) { return !i.done; });
+  if (S.mode === 'day' && !S.doneOpen && S.filter !== 'done') return vis.filter(function (i) { return !i.done; });
   return vis;
 }
 function selectedItems() {
@@ -3136,7 +3142,6 @@ document.addEventListener('click', function (e) {
     case 'filter':     S.filter = v; renderHero(); fillTasks(); break;
     case 'stat':
       S.filter = S.filter === v ? 'all' : v;
-      if (S.filter === 'done') S.doneOpen = true;
       renderHero(); fillTasks();
       { const l = $('#chips') || $('#list'); if (l && l.getBoundingClientRect().top > innerHeight * .6) l.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
       break;
