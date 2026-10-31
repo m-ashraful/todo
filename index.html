@@ -1100,9 +1100,30 @@ const WEEK_EN      = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const SAT_FIRST    = [6, 0, 1, 2, 3, 4, 5];   // বাংলাদেশের সপ্তাহ শনিবার থেকে
 
 const CAT = {
-  'Task': '#6366F1', 'Event': '#059669', 'Meeting': '#D97706', 'Call': '#0284C7',
-  'Personal': '#DB2777', 'Shooting': '#EA580C', 'Boss Seating': '#E11D48', 'Other': '#64748B'
+  'Routine': '#6366F1', 'Content': '#C026D3', 'Shooting': '#EA580C', 'Partner': '#0284C7', 'Meeting': '#0D9488',
+  'Payment': '#16A34A', 'Boss Seating': '#E11D48', 'Personal': '#A16207', 'Other': '#64748B'
 };
+// ক্যাটাগরি — শিটে ইংরেজি নাম, অ্যাপে বাংলা (পুরনো Task/Event/Call সার্ভার নিজেই নতুনটায় বদলে নেয়)
+const CAT_BN = {
+  'Routine': 'রুটিন চেক', 'Content': 'কন্টেন্ট', 'Shooting': 'শ্যুটিং', 'Partner': 'পার্টনার ও চুক্তি',
+  'Meeting': 'মিটিং ও কল', 'Payment': 'পেমেন্ট', 'Boss Seating': 'বসের সাথে', 'Personal': 'ব্যক্তিগত', 'Other': 'অন্যান্য'
+};
+function catLabel(c) { return CAT_BN[c] || c; }
+// নতুন কাজের নাম লিখতে লিখতেই ক্যাটাগরি আন্দাজ — সার্ভারের CATEGORY_RULES (Gs)-এর হুবহু কপি, বদলালে দুটোই
+const CAT_RULES = [
+  ['Payment',      'payment|pay|bill|বিল|পেমেন্ট|বেতন|salary|টাকা|taka|bkash|বিকাশ'],
+  ['Shooting',     'shooting|shoot|শুটিং|শ্যুটিং|শ্যুট|podcast|পডকাস্ট'],
+  ['Meeting',      'meeting|মিটিং|call|কল|ফোন|phone|zoom'],
+  ['Boss Seating', 'boss|বস|স্যার|sir'],
+  ['Partner',      'rokomari|রকমারি|wafilife|ওয়াফিলাইফ|chukti|চুক্তি|partner|পার্টনার|softlab|bd\s*books|বিডিবুকস|yarata|deal|ডিল|agreement'],
+  ['Content',      'content|কন্টেন্ট|কনটেন্ট|creator|ক্রিয়েটর|video|ভিডিও|link|লিংক|news|নিউজ|entertainment|post|influencer|mia\s*bhai'],
+  ['Routine',      'pathao|পাঠাও|invent|invenory|ইনভেন্টরি|stock|স্টক|sale|সেলস|বিক্রয়|বিক্রি|website|ওয়েবসাইট|distribution|ডিস্ট্রিবিউশন|report|রিপোর্ট|statement|check|chaeck|চেক'],
+  ['Personal',     'personal|ব্যক্তিগত|বাসা|family|পরিবার']
+].map(function (r) { return [r[0], new RegExp('(?<![\p{L}\p{M}\p{N}_])(?:' + r[1] + ')', 'iu')]; });
+function guessCat(text) {
+  for (let i = 0; i < CAT_RULES.length; i++) if (CAT_RULES[i][1].test(text || '')) return CAT_RULES[i][0];
+  return 'Other';
+}
 const PRI = { 'Must': '#E11D48', 'Should': '#2563EB', 'Could': '#64748B' };
 // কাজের অবস্থা — শিটে ইংরেজি নাম, অ্যাপে বাংলা। পুরনো Pending/Processing = অপেক্ষায়, Partially Done = চলছে
 const STATUS_LIST = ['To Do', 'Working', 'Waiting', 'Done'];
@@ -1403,7 +1424,7 @@ function renderSide() {
       }
       return h;
     }).join('') +
-    '<div class="s-foot">' + (S.boot && S.boot.user ? esc(S.boot.user.email) + '<br>' : '') + '<svg class="dev-mk" viewBox="0 0 100 100" aria-hidden="true" style="width:1.4em;height:1.4em;vertical-align:-.34em;margin-right:5px;display:inline-block"><defs><linearGradient id="devmk-mytodo2" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="100" y2="100"><stop offset="0" stop-color="#6366f1"/><stop offset=".5" stop-color="#8b5cf6"/><stop offset="1" stop-color="#d946ef"/></linearGradient></defs><path d="M8 18H92M16 88 40 18 64 88M84 18V88" fill="none" stroke="url(#devmk-mytodo2)" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><circle cx="40" cy="64" r="8" fill="url(#devmk-mytodo2)"/></svg>Developed By: <b>Md. Ashraful Islam</b><br>Smart To-Do · v9.5</div>');
+    '<div class="s-foot">' + (S.boot && S.boot.user ? esc(S.boot.user.email) + '<br>' : '') + '<svg class="dev-mk" viewBox="0 0 100 100" aria-hidden="true" style="width:1.4em;height:1.4em;vertical-align:-.34em;margin-right:5px;display:inline-block"><defs><linearGradient id="devmk-mytodo2" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="100" y2="100"><stop offset="0" stop-color="#6366f1"/><stop offset=".5" stop-color="#8b5cf6"/><stop offset="1" stop-color="#d946ef"/></linearGradient></defs><path d="M8 18H92M16 88 40 18 64 88M84 18V88" fill="none" stroke="url(#devmk-mytodo2)" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><circle cx="40" cy="64" r="8" fill="url(#devmk-mytodo2)"/></svg>Developed By: <b>Md. Ashraful Islam</b><br>Smart To-Do · v9.6</div>');
 }
 
 // সব পাতার উপরে — logo, প্রতিষ্ঠানের নাম, অ্যাপের নাম আর কার To-Do (logo না এলে শুধু লেখা)
@@ -1509,10 +1530,10 @@ function fillChips() {
     if (n) h += chip('st:' + s, staLabel(s), n, STA[s]);
   });
   (S.boot ? S.boot.categories : Object.keys(CAT)).forEach(function (c) {
-    if (byCat[c]) h += chip(c, c, byCat[c], cc(c));
+    if (byCat[c]) h += chip(c, catLabel(c), byCat[c], cc(c));
   });
   Object.keys(byCat).forEach(function (c) {
-    if (S.boot && S.boot.categories.indexOf(c) === -1) h += chip(c, c, byCat[c], cc(c));
+    if (S.boot && S.boot.categories.indexOf(c) === -1) h += chip(c, catLabel(c), byCat[c], cc(c));
   });
   setHTML(box, h);
 }
@@ -1658,7 +1679,7 @@ function card(i, opts) {
   const c = cc(i.category);
   const stuck = !i.done && S.boot && i.rollover >= S.boot.nudge;
   const time = timeText(i);
-  let tags = '<span class="tag" style="--t:' + c + '">' + esc(i.category) + '</span>';
+  let tags = '<span class="tag" style="--t:' + c + '">' + esc(catLabel(i.category)) + '</span>';
   if (i.priority === 'Must') tags += '<span class="tag" style="--t:' + PRI.Must + '">▲ Must</span>';
   else if (i.priority === 'Could') tags += '<span class="tag" style="--t:' + PRI.Could + '">▽ Could</span>';
   // চলছে/অপেক্ষায় চিহ্নে চাপলে অবস্থা বদলের ছোট তালিকা
@@ -1722,9 +1743,10 @@ function openEditor(item, preset) {
     F = Object.assign({}, item, { ref: refOf(item) });
   } else {
     F = Object.assign({
-      ref: null, task: '', category: 'Task', priority: 'Should', status: 'To Do',
+      ref: null, task: '', category: 'Other', priority: 'Should', status: 'To Do',
       date: S.mode === 'day' ? S.date : todayKey(), start: '', end: '', note: '', guest: ''
     }, preset || {});
+    F.catAuto = true;   // নাম লিখতে লিখতে ক্যাটাগরি নিজে বসে — নিজে বাছলে (f-cat) বন্ধ
   }
   renderEditor();
   openSheet();
@@ -1734,7 +1756,7 @@ function openEditor(item, preset) {
 function guestHint(cat) {
   return S.boot.calendarCategories.indexOf(cat) !== -1
     ? '📅 Google Calendar-এ যাবে — গেস্টরা ইনভাইট পাবেন'
-    : 'গেস্ট ইনভাইট শুধু ' + S.boot.calendarCategories.join(' / ') + '-এ যায়';
+    : 'গেস্ট ইনভাইট শুধু ' + S.boot.calendarCategories.map(catLabel).join(' / ') + '-এ যায়';
 }
 
 function renderEditor() {
@@ -1758,7 +1780,7 @@ function renderEditor() {
     '<textarea id="fTask" class="inp ttl-inp" rows="2" placeholder="কী করতে হবে?">' + esc(F.task) + '</textarea>' +
     '<div class="fld"><div class="lbl">ক্যাটাগরি</div><div class="chips">' +
       S.boot.categories.map(function (c) {
-        return '<button class="chip' + (F.category === c ? ' on' : '') + '" style="--c:' + cc(c) + '" data-act="f-cat" data-v="' + esc(c) + '"><span class="dot"></span>' + esc(c) + '</button>';
+        return '<button class="chip' + (F.category === c ? ' on' : '') + '" style="--c:' + cc(c) + '" data-act="f-cat" data-v="' + esc(c) + '"><span class="dot"></span>' + esc(catLabel(c)) + '</button>';
       }).join('') + '</div></div>' +
     '<div class="fld"><div class="lbl">প্রায়োরিটি</div><div class="seg">' +
       S.boot.priorities.map(function (p) {
@@ -2212,7 +2234,7 @@ function fillRoutine() {
         '<div class="cbody"><div class="row1"><div class="ttl" style="text-decoration:none">' + esc(t.task) + '</div>' +
         (time ? '<div class="tm">' + time + '</div>' : '') + '</div>' +
         '<div class="tags"><span class="tag" style="--t:#7C3AED">' + ic('repeat', 11) + esc(tplSummary(t)) + '</span>' +
-        '<span class="tag" style="--t:' + cc(t.category) + '">' + esc(t.category) + '</span>' +
+        '<span class="tag" style="--t:' + cc(t.category) + '">' + esc(catLabel(t.category)) + '</span>' +
         (t.priority === 'Must' ? '<span class="tag" style="--t:' + PRI.Must + '">▲ Must</span>' : '') + '</div></div>' +
         '<button class="sw' + (t.active ? ' on' : '') + '" data-act="tpl-active" data-id="' + esc(t.id) + '" aria-label="চালু/বন্ধ" style="align-self:center"></button>' +
         '</article>';
@@ -2248,7 +2270,7 @@ function openTplEditor(t) {
     weekdays: tplWeekdays(t.days), monthDay: t.repeat === 'Monthly' ? (Number(t.days) || 1) : 1,
     start: t.start, end: t.end, active: t.active
   } : {
-    id: '', task: '', category: 'Task', priority: 'Should', repeat: 'Daily',
+    id: '', task: '', category: 'Routine', priority: 'Should', repeat: 'Daily',
     weekdays: [], monthDay: 1, start: '', end: '', active: true
   };
   renderTplEditor();
@@ -2285,7 +2307,7 @@ function renderTplEditor() {
     when +
     '<div class="fld"><div class="lbl">ক্যাটাগরি</div><div class="chips">' +
       S.boot.categories.map(function (c) {
-        return '<button class="chip sm' + (T.category === c ? ' on' : '') + '" style="--c:' + cc(c) + '" data-act="t-cat" data-v="' + esc(c) + '"><span class="dot"></span>' + esc(c) + '</button>';
+        return '<button class="chip sm' + (T.category === c ? ' on' : '') + '" style="--c:' + cc(c) + '" data-act="t-cat" data-v="' + esc(c) + '"><span class="dot"></span>' + esc(catLabel(c)) + '</button>';
       }).join('') + '</div></div>' +
     '<div class="fld"><div class="lbl">প্রায়োরিটি</div><div class="seg">' +
       S.boot.priorities.map(function (p) {
@@ -2391,7 +2413,7 @@ function fillInsights() {
     '<div class="panel"><h3>' + ic('flag') + ' প্রায়োরিটি অনুযায়ী<small>৩০ দিন</small></h3><div class="bars">' +
       I.priority.map(function (p) { return bar(p.name, p, PRI[p.name] || '#64748B'); }).join('') + '</div></div>' +
     (I.category.length ? '<div class="panel"><h3>' + ic('grid') + ' ক্যাটাগরি অনুযায়ী<small>৩০ দিন</small></h3><div class="bars">' +
-      I.category.map(function (c) { return bar(c.name, c, cc(c.name)); }).join('') + '</div></div>' : '') +
+      I.category.map(function (c) { return bar(catLabel(c.name), c, cc(c.name)); }).join('') + '</div></div>' : '') +
     (I.upcoming.length ? '<div class="panel"><h3>' + ic('calendar') + ' সামনের ৭ দিন<small>Meeting / Event / Call</small></h3>' + I.upcoming.map(miniRow).join('') + '</div>' : '') +
     (I.stuck.length ? '<div class="panel"><h3>' + ic('alert') + ' বারবার পিছিয়ে যাচ্ছে<small>আজ করুন বা বাদ দিন</small></h3>' + I.stuck.map(miniRow).join('') + '</div>' : '') +
     '<div class="panel"><h3>' + ic('file') + ' রিপোর্ট (PDF)<small>অ্যাপেই দেখুন · ডাউনলোড · শেয়ার · প্রিন্ট</small></h3>' +
@@ -2458,7 +2480,7 @@ function fillMore() {
       (AUTH ? '<button class="btn ghost sm" data-act="logout">লগআউট</button>' : '') + '</div></div>' +
     '<div class="panel"><a class="link" href="' + esc(S.boot.sheetUrl) + '" target="_blank" rel="noopener">' +
       ic('sheet') + '<span>Google Sheet খুলুন (ব্যাকএন্ড)</span>' + ic('ext', 16) + '</a></div>' +
-    '<div class="foot">Smart To-Do · v9.5</div>';
+    '<div class="foot">Smart To-Do · v9.6</div>';
 }
 
 /* ---------- নিরাপত্তা (শুধু মালিক দেখেন) ----------
@@ -3075,7 +3097,7 @@ document.addEventListener('click', function (e) {
     case 'close':      closeSheet(); break;
 
     // কাজের ফর্ম
-    case 'f-cat':  F.category = v; pickIn(el, a); $('#gHint').textContent = guestHint(v); break;
+    case 'f-cat':  F.category = v; F.catAuto = false; pickIn(el, a); $('#gHint').textContent = guestHint(v); break;
     case 'f-pri':  F.priority = v; pickIn(el, a); break;
     case 'f-sta':  F.status = v; pickIn(el, a); $('#sHint').textContent = STA_HINT[v] || ''; break;
     case 'f-date': $('#fDate').value = v; F.date = v; pickIn(el, a); break;
@@ -3224,6 +3246,11 @@ document.addEventListener('change', function (e) {
 let searchTimer = null;
 document.addEventListener('input', function (e) {
   if (e.target.id === 'printDate' && e.target.value) { S.repDate = e.target.value; return; }   // change-এ পুরো ঘর আবার আঁকা হয়
+  if (e.target.id === 'fTask' && F && F.catAuto) {
+    const g = guessCat(e.target.value), b = document.querySelector('[data-act="f-cat"][data-v="' + g + '"]');
+    if (g !== F.category && b) { F.category = g; pickIn(b, 'f-cat'); $('#gHint').textContent = guestHint(g); }
+    return;
+  }
   if (e.target.id !== 'q') return;
   clearTimeout(searchTimer);
   searchTimer = setTimeout(function () { S.q = e.target.value; loadList(); }, 350);
