@@ -31,14 +31,20 @@ function setAuth(t) {
 
 /* text/plain POST — এতে ব্রাউজার আলাদা preflight পাঠায় না, Apps Script-এ সরাসরি যায় */
 function callServer(fn, args) {
+  // নেট আটকে গেলে অনুরোধ অনন্তকাল ঝোলে, বোতামও "ব্যস্ত" থেকে যায় — ২ মিনিটে ছেড়ে দিই
+  var ac = new AbortController(), tm = setTimeout(function () { ac.abort(); }, 120000);
   return fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify({ fn: fn, args: args || [], auth: AUTH })
+    body: JSON.stringify({ fn: fn, args: args || [], auth: AUTH }),
+    signal: ac.signal
   }).then(function (r) {
+    clearTimeout(tm);
     if (!r.ok) throw new Error('সার্ভার সাড়া দিচ্ছে না (' + r.status + ') — একটু পরে আবার চেষ্টা করুন।');
     return r.json().catch(function () { throw new Error('সার্ভারের উত্তর বোঝা যায়নি — deployment ঠিক আছে কি না দেখুন।'); });
-  }, function () {
+  }, function (e) {
+    clearTimeout(tm);
+    if (e && e.name === 'AbortError') throw new Error('সার্ভার ২ মিনিটেও উত্তর দেয়নি — কাজটা হয়ে থাকতে পারে, ↻ চেপে দেখে নিন।');
     throw new Error('সার্ভারে পৌঁছানো যায়নি — ইন্টারনেট সংযোগ দেখুন।');
   }).then(function (j) {
     if (!j || !j.ok) throw new Error((j && j.error) || 'অজানা সমস্যা।');
