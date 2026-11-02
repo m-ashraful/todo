@@ -764,6 +764,7 @@ function callServer(fn, args) {
   .rep-d input { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; border: 0; }
   .rep-chips { display: flex; gap: 6px; margin-top: 8px; }
   .rp-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .rp-btns .tool.wide { grid-column: 1 / -1; }
   .rp-sub { font-size: 11px; font-weight: 800; letter-spacing: .12em; color: var(--ink-3); margin: 14px 2px 8px; }
   .rv { position: fixed; inset: 0; z-index: 70; background: #3B3F4C; display: none; flex-direction: column; }
   .rv.open { display: flex; }
@@ -2792,7 +2793,9 @@ function fillInsights() {
     (I.stuck.length ? '<div class="panel"><h3>' + ic('alert') + ' বারবার পিছিয়ে যাচ্ছে<small>আজ করুন বা বাদ দিন</small></h3>' + I.stuck.map(miniRow).join('') + '</div>' : '') +
     '<div class="panel"><h3>' + ic('file') + ' রিপোর্ট (PDF)<small>অ্যাপেই দেখুন · ডাউনলোড · শেয়ার · প্রিন্ট</small></h3>' +
       repDatePicker() +
-      '<div class="rp-btns">' + Object.keys(REPORTS).filter(function (k) { return k !== 'boss'; }).map(repBtn).join('') + '</div>' +
+      // বসের টেবিলের প্রতিবেদন সবার উপরে, পুরো চওড়ায় — রোজ দিনশেষে এটাই ছাপা হয়
+      '<div class="rp-btns">' + repBtn('boss').replace('class="tool"', 'class="tool wide"') +
+        Object.keys(REPORTS).filter(function (k) { return k !== 'boss'; }).map(repBtn).join('') + '</div>' +
       '<div class="rp-sub">ইমেইল / TELEGRAM-এ পাঠানো</div>' +
       '<div class="tools">' + toolBtn('eod') + toolBtn('weekly') + toolBtn('sheetReport') + '</div></div>';
 }
@@ -2961,7 +2964,7 @@ function fillMore() {
       (AUTH ? '<button class="btn ghost sm" data-act="logout">লগআউট</button>' : '') + '</div></div>' +
     '<div class="panel"><a class="link" href="' + esc(S.boot.sheetUrl) + '" target="_blank" rel="noopener">' +
       ic('sheet') + '<span>Google Sheet খুলুন (ব্যাকএন্ড)</span>' + ic('ext', 16) + '</a></div>' +
-    '<div class="foot">Smart To-Do · v9.17</div>';
+    '<div class="foot">Smart To-Do · v9.18</div>';
 }
 
 /* ---------- নিরাপত্তা (শুধু মালিক দেখেন) ----------
