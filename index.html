@@ -866,8 +866,11 @@ function callServer(fn, args) {
   .bq .go { flex: none; align-self: center; font-size: 12px; font-weight: 700; color: #BE185D; display: flex; align-items: center; gap: 2px; }
   @media (prefers-color-scheme: dark) { .bq .go { color: #F472B6; } }
   .bq-more { font-size: 12px; color: var(--ink-3); text-align: center; padding: 6px 0 2px; }
-  .boss-open { width: 100%; margin-top: 10px; background: #BE185D; }
-  .boss-wa { width: 100%; margin-top: 8px; background: #16A34A; color: #fff; }
+  .boss-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+  .boss-btns.one { grid-template-columns: 1fr; }
+  .boss-btns .btn { width: 100%; padding: 14px 12px; }
+  .boss-wa { background: #16A34A; color: #fff; }
+  @media (max-width: 520px) { .boss-btns { grid-template-columns: 1fr; gap: 8px; } }
   .bopt-ask { background: var(--surface-2); border-radius: 12px; padding: 10px 12px; font-size: 13px; }
   .bopt-ask b { display: block; font-size: 14px; }
   .bopt-ask span { display: block; color: var(--ink-2); margin-top: 3px; }
@@ -1256,7 +1259,7 @@ const CAT = {
 };
 // ক্যাটাগরি — শিটে ইংরেজি নাম, অ্যাপে বাংলা (পুরনো Task/Event/Call সার্ভার নিজেই নতুনটায় বদলে নেয়)
 // সংস্করণ এক জায়গায় — ফোনের নিচে আর কম্পিউটারের সাইডবারে একই নম্বর (আগে সাইডবারে v9.7 আটকে ছিল)
-const APP_VER = 'v9.22';
+const APP_VER = 'v9.23';
 const CAT_BN = {
   'Routine': 'রুটিন চেক', 'Content': 'কন্টেন্ট', 'Shooting': 'শ্যুটিং', 'Partner': 'পার্টনার ও চুক্তি',
   'Meeting': 'মিটিং ও কল', 'Payment': 'পেমেন্ট', 'Boss Seating': 'বসের সাথে', 'Personal': 'ব্যক্তিগত', 'Other': 'অন্যান্য'
@@ -2832,13 +2835,16 @@ function bossPanel() {
       (Q.decided.length ? '<span>আজ ' + bnNum(Q.decided.length) + 'টা সিদ্ধান্ত</span>' : '') + '</div>' +
     Q.pending.slice(0, 8).map(bqRow).join('') +
     (Q.pending.length > 8 ? '<div class="bq-more">আরও ' + bnNum(Q.pending.length - 8) + 'টা — রিপোর্টে সব আছে</div>' : '');
-  return '<div class="panel"><h3>' + ic('pen') + ' বসের টেবিলে<small>অনুমোদন · সম্মতি · সিদ্ধান্ত</small></h3>' + body +
-    '<button class="btn primary boss-open" data-act="report" data-kind="boss">' + ic('file', 16) + ' অনুমোদন ও সিদ্ধান্ত প্রতিবেদন</button>' +
-    (Q && !Q.error && Q.pending.length ? '<button class="btn boss-wa" data-act="boss-wa">' + ic('wa', 16) + ' WhatsApp-এ পাঠান</button>' : '') +
+  // প্রতিবেদন আর WhatsApp বোতাম "বসের টেবিলে"-র আগেই — রোজ এ দুটোই লাগে, তালিকার নিচে নামতে হয় না
+  const wa = Q && !Q.error && Q.pending.length;
+  return '<div class="boss-btns' + (wa ? '' : ' one') + '">' +
+      '<button class="btn primary boss-open" data-act="report" data-kind="boss">' + ic('file', 16) + ' অনুমোদন ও সিদ্ধান্ত প্রতিবেদন</button>' +
+      (wa ? '<button class="btn boss-wa" data-act="boss-wa">' + ic('wa', 16) + ' WhatsApp-এ পাঠান</button>' : '') + '</div>' +
+    '<div class="panel"><h3>' + ic('pen') + ' বসের টেবিলে<small>অনুমোদন · সম্মতি · সিদ্ধান্ত</small></h3>' + body +
     '<div class="fld"><div class="lbl">রিপোর্ট যাঁর টেবিলে যাবে</div>' +
       '<div class="prow" style="margin:0"><input id="bossName" class="inp" maxlength="80" autocomplete="off" placeholder="যেমন: Managing Director" value="' + esc(S.boot.bossName || '') + '">' +
       '<button class="btn ghost" data-act="boss-name-save">সেভ</button></div>' +
-      '<div class="hint">রিপোর্টের "প্রাপক" লাইনে বসে। আগের দিনের রিপোর্ট: নিচের তারিখ বদলে এই বোতাম।</div></div>' +
+      '<div class="hint">রিপোর্টের "প্রাপক" লাইনে বসে। আগের দিনের প্রতিবেদন: নিচের "রিপোর্ট (PDF)" অংশে তারিখ বদলে খুলুন।</div></div>' +
     '<div class="fld"><div class="lbl">বসের WhatsApp নম্বর</div>' +
       '<div class="prow" style="margin:0"><input id="bossWa" class="inp" type="tel" inputmode="tel" maxlength="20" autocomplete="off" placeholder="যেমন: 01712345678" value="' + esc(waLocal(S.boot.bossWa)) + '">' +
       '<button class="btn ghost" data-act="boss-wa-save">সেভ</button></div>' +
