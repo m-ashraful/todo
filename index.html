@@ -765,6 +765,8 @@ function callServer(fn, args) {
   .rep-chips { display: flex; gap: 6px; margin-top: 8px; }
   .rp-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
   .rp-btns .tool.wide { grid-column: 1 / -1; }
+  .rep-top { margin-bottom: 14px; }
+  .rep-top .tool { width: 100%; }
   .rp-sub { font-size: 11px; font-weight: 800; letter-spacing: .12em; color: var(--ink-3); margin: 14px 2px 8px; }
   .rv { position: fixed; inset: 0; z-index: 70; background: #3B3F4C; display: none; flex-direction: column; }
   .rv.open { display: flex; }
@@ -1253,6 +1255,8 @@ const CAT = {
   'Payment': '#16A34A', 'Boss Seating': '#E11D48', 'Personal': '#A16207', 'Other': '#64748B'
 };
 // ক্যাটাগরি — শিটে ইংরেজি নাম, অ্যাপে বাংলা (পুরনো Task/Event/Call সার্ভার নিজেই নতুনটায় বদলে নেয়)
+// সংস্করণ এক জায়গায় — ফোনের নিচে আর কম্পিউটারের সাইডবারে একই নম্বর (আগে সাইডবারে v9.7 আটকে ছিল)
+const APP_VER = 'v9.21';
 const CAT_BN = {
   'Routine': 'রুটিন চেক', 'Content': 'কন্টেন্ট', 'Shooting': 'শ্যুটিং', 'Partner': 'পার্টনার ও চুক্তি',
   'Meeting': 'মিটিং ও কল', 'Payment': 'পেমেন্ট', 'Boss Seating': 'বসের সাথে', 'Personal': 'ব্যক্তিগত', 'Other': 'অন্যান্য'
@@ -1646,7 +1650,7 @@ function renderSide() {
         (t[0] === 'tasks' && S.overdue ? '<span class="badge" title="বকেয়া">' + S.overdue + '</span>' : '') + '</button>';
     }).join('') +
     '<div class="s-foot">' + (S.boot && S.boot.user ? '<div class="s-mail">' + esc(S.boot.user.email) + '</div>' : '') +
-    '<div class="s-dev"><svg class="dev-mk" viewBox="0 0 100 100" aria-hidden="true" style="width:1.4em;height:1.4em;vertical-align:-.34em;margin-right:5px;display:inline-block"><defs><linearGradient id="devmk-mytodo2" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="100" y2="100"><stop offset="0" stop-color="#6366f1"/><stop offset=".5" stop-color="#8b5cf6"/><stop offset="1" stop-color="#d946ef"/></linearGradient></defs><path d="M8 18H92M16 88 40 18 64 88M84 18V88" fill="none" stroke="url(#devmk-mytodo2)" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><circle cx="40" cy="64" r="8" fill="url(#devmk-mytodo2)"/></svg>Developed By: <b>Md. Ashraful Islam</b><br>Smart To-Do · v9.7</div></div>');
+    '<div class="s-dev"><svg class="dev-mk" viewBox="0 0 100 100" aria-hidden="true" style="width:1.4em;height:1.4em;vertical-align:-.34em;margin-right:5px;display:inline-block"><defs><linearGradient id="devmk-mytodo2" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="100" y2="100"><stop offset="0" stop-color="#6366f1"/><stop offset=".5" stop-color="#8b5cf6"/><stop offset="1" stop-color="#d946ef"/></linearGradient></defs><path d="M8 18H92M16 88 40 18 64 88M84 18V88" fill="none" stroke="url(#devmk-mytodo2)" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><circle cx="40" cy="64" r="8" fill="url(#devmk-mytodo2)"/></svg>Developed By: <b>Md. Ashraful Islam</b><br>Smart To-Do · ' + APP_VER + '</div></div>');
 }
 
 // সব পাতার উপরে — logo, প্রতিষ্ঠানের নাম, অ্যাপের নাম আর কার To-Do (logo না এলে শুধু লেখা)
@@ -2776,6 +2780,8 @@ function fillInsights() {
   if (!S.insights) { v.innerHTML = '<div class="sk" style="height:110px"></div>' + skel(3); loadInsights(); return; }
   const I = S.insights, tp = pct(I.today);
   v.innerHTML =
+    // রোজকার Daily Work Report পাতার একদম উপরে — নিচের "রিপোর্ট (PDF)" অংশ পর্যন্ত নামতে হয় না
+    '<div class="rep-top">' + repBtn('daily') + '</div>' +
     '<div class="panel today-card"><div class="tc-ring">' + ring(tp, 84, 9, false) + '<b>' + tp + '%</b></div>' +
       '<div><div class="k">আজকের অগ্রগতি</div><div class="v">' + I.today.d + ' / ' + I.today.t + '</div>' +
       '<div class="s">' + (I.today.t - I.today.d) + ' টা কাজ বাকি</div></div></div>' +
@@ -2967,7 +2973,7 @@ function fillMore() {
       (AUTH ? '<button class="btn ghost sm" data-act="logout">লগআউট</button>' : '') + '</div></div>' +
     '<div class="panel"><a class="link" href="' + esc(S.boot.sheetUrl) + '" target="_blank" rel="noopener">' +
       ic('sheet') + '<span>Google Sheet খুলুন (ব্যাকএন্ড)</span>' + ic('ext', 16) + '</a></div>' +
-    '<div class="foot">Smart To-Do · v9.20</div>';
+    '<div class="foot">Smart To-Do · ' + APP_VER + '</div>';
 }
 
 /* ---------- নিরাপত্তা (শুধু মালিক দেখেন) ----------
