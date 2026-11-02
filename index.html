@@ -892,7 +892,15 @@ function callServer(fn, args) {
   .rp .rq i { font-style: normal; color: #444; }
   .rp .sm { display: block; font-size: 10px; color: #555; margin-top: 2px; }
   .rp .sm.late { color: #000; font-weight: bold; }
-  .rp td.dec { font-size: 10.5px; line-height: 1.95; }
+  .rp .bt tr.it td { border-bottom: 0; padding-top: 7px; }
+  .rp .bt tr.it td.c { border-bottom: 1px solid #b5b5b5; padding-top: 7px; }
+  .rp .bt td.dt { font-size: 10.5px; line-height: 1.7; }
+  .rp .bt td.dt i, .rp .pm i { font-style: normal; color: #555; }
+  .rp .bt td.dt .late { font-weight: bold; }
+  .rp .bt tr.dk td { padding: 2px 8px 6px; }
+  .rp .dk-h { font-weight: bold; font-size: 10.5px; border-top: 1px dashed #bbb; padding-top: 5px; }
+  .rp .dk-h small { font-weight: normal; color: #666; font-size: 9.5px; }
+  .rp .dk-b { display: flex; flex-wrap: wrap; column-gap: 22px; font-size: 10.5px; line-height: 1.9; }
   .rp .bx { display: inline-block; width: 10px; height: 10px; border: 1px solid #000; vertical-align: -1px; margin-right: 5px; position: relative; }
   .rp .rmk { border-bottom: 1px dotted #777; height: 18px; }
   /* পুরো বাংলা পাতা — বাংলা অক্ষরে Noto Serif Bengali (দাপ্তরিক চিঠির ধাঁচ), ইংরেজি নামে Times।
@@ -907,18 +915,19 @@ function callServer(fn, args) {
   .rp.bn .urg { letter-spacing: 0; font-size: 9px; }
   .rp .ck { white-space: nowrap; }
   .rp .blank { display: inline-block; width: 58px; border-bottom: 1px dotted #555; margin-left: 3px; height: 1em; vertical-align: -2px; }
-  .rp .pm { font-size: 9.5px; color: #333; margin-top: 2px; white-space: nowrap; }
-  .rp .pm .bx { width: 8px; height: 8px; margin: 0 2px 0 4px; }
-  .rp .rq .op { display: block; padding-left: 10px; }
-  .rp.bn .rmk { font-size: 9.5px; color: #555; height: auto; padding-top: 4px; line-height: 2.2; }
+  .rp .pm { font-size: 10.5px; line-height: 1.9; }
+  .rp .pm .bx { margin: 0 5px 0 10px; }
+  .rp.bn .rmk { font-size: 10px; color: #555; height: auto; padding-top: 2px; line-height: 2.2; }
   .rp tr.hot td:first-child { box-shadow: inset 3px 0 0 #000; font-weight: bold; }
   @media (max-width: 520px) {
     .rp-memo { grid-template-columns: 1fr; }
     .rp-memo div:nth-child(odd) { border-right: 0; }
-    .rp td.dec { font-size: 9.5px; line-height: 1.6; }
+    .rp .dk-b { display: block; font-size: 10px; line-height: 1.7; }
     .rp .ck { white-space: normal; }
-    .rp.fixed td.dec { font-size: 10.5px; line-height: 1.95; }
+    .rp .bt th:last-child { width: 96px !important; }
+    .rp.fixed .dk-b { display: flex; font-size: 10.5px; line-height: 1.9; }
     .rp.fixed .ck { white-space: nowrap; }
+    .rp.fixed .bt th:last-child { width: 150px !important; }
     /* PDF ফোনেও A4-এর মাপে (794px) আঁকা হয় — ছোট পর্দার নিয়ম সেখানে খাটবে না */
     .rp.fixed { font-size: 12.5px; }
     .rp.fixed .rp-head { padding: 0 64px; min-height: 64px; }
@@ -2896,7 +2905,7 @@ function fillMore() {
       (AUTH ? '<button class="btn ghost sm" data-act="logout">লগআউট</button>' : '') + '</div></div>' +
     '<div class="panel"><a class="link" href="' + esc(S.boot.sheetUrl) + '" target="_blank" rel="noopener">' +
       ic('sheet') + '<span>Google Sheet খুলুন (ব্যাকএন্ড)</span>' + ic('ext', 16) + '</a></div>' +
-    '<div class="foot">Smart To-Do · v9.9</div>';
+    '<div class="foot">Smart To-Do · v9.10</div>';
 }
 
 /* ---------- নিরাপত্তা (শুধু মালিক দেখেন) ----------
@@ -3229,6 +3238,7 @@ function repPage(d) {
  *      আর মন্তব্যের লাইন → সেদিনের প্রাপ্ত সিদ্ধান্ত → স্বাক্ষর ---- */
 function bossPage(d) {
   const P = d.pending, D = d.decided, n = P.length, isToday = d.date === d.today, N = bnNum;
+  const fund = P.reduce(function (s, x) { return s + (x.type === 'Fund' && x.amt ? x.amt : 0); }, 0);
   const org = ORG_NAME.split(/\s+/).map(function (w) { return w.charAt(0); }).join('').toUpperCase();
   const bd = function (k) { return fmt(k, { day: 'numeric', month: 'long', year: 'numeric' }); };
   const ck = function (label) {
@@ -3247,37 +3257,39 @@ function bossPage(d) {
       '<div><span>সূত্র</span><b>' + esc(org + '/অসি/' + N(d.date.replace(/-/g, '/'))) + '</b></div>' +
       '<div class="full"><span>বিষয়</span><b>আপনার সদয় অনুমোদন, সম্মতি বা সিদ্ধান্তের অপেক্ষায় থাকা বিষয়সমূহ।</b></div></div>' +
     '<p class="rp-intro">' + (n
-      ? 'নিম্নবর্ণিত ' + N(n) + 'টি বিষয়ে আপনার অনুমোদন, সম্মতি বা সিদ্ধান্ত ছাড়া কাজ এগিয়ে নেওয়া সম্ভব হচ্ছে না। ' +
-        'প্রতিটি বিষয়ের পাশে আপনার সিদ্ধান্তে টিক চিহ্ন দিয়ে প্রয়োজনে মন্তব্য লিখে দেওয়ার জন্য সবিনয় অনুরোধ করছি।'
-      : (isToday ? 'আজ' : bd(d.date)) + ' পর্যন্ত আপনার অনুমোদন বা সিদ্ধান্তের অপেক্ষায় কোনো বিষয় নেই।') + '</p>' +
+      ? 'নিম্নবর্ণিত ' + N(n) + 'টি বিষয় আপনার সদয় অনুমোদন, সম্মতি বা সিদ্ধান্তের জন্য উপস্থাপন করা হলো। ' +
+        'প্রতিটি বিষয়ের নিচে "সিদ্ধান্ত" অংশে প্রযোজ্য ঘরে টিক (✓) চিহ্ন দিয়ে এবং প্রয়োজনে মন্তব্য লিখে দেওয়ার জন্য সবিনয় অনুরোধ করছি। ' +
+        'সিদ্ধান্ত পাওয়া গেলে সংশ্লিষ্ট কাজগুলো এগিয়ে নেওয়া সম্ভব হবে।'
+      : (isToday ? 'আজ' : bd(d.date)) + ' পর্যন্ত আপনার অনুমোদন বা সিদ্ধান্তের জন্য কোনো বিষয় উপস্থাপিত নেই।') + '</p>' +
     '<div class="rp-stats">' +
-      '<div><b>' + N(n) + '</b><span>সিদ্ধান্তের অপেক্ষায়</span></div>' +
+      '<div><b>' + N(n) + '</b><span>উপস্থাপিত বিষয়</span></div>' +
       '<div><b>' + N(d.urgent) + '</b><span>জরুরি</span></div>' +
-      '<div><b>' + N(d.aged) + '</b><span>৩ দিন বা বেশি ধরে</span></div>' +
+      '<div><b>' + (fund ? taka(fund) : '—') + '</b><span>অর্থ ছাড়ের আবেদন</span></div>' +
       '<div><b>' + N(D.length) + '</b><span>' + (isToday ? 'আজকের সিদ্ধান্ত' : 'সেদিনের সিদ্ধান্ত') + '</span></div></div>' +
-    '<div class="rp-h">ক. আপনার সিদ্ধান্তের অপেক্ষায় <small>(' + N(n) + 'টি)</small></div>';
+    '<div class="rp-h">ক. সিদ্ধান্তের জন্য উপস্থাপিত বিষয় <small>(' + N(n) + 'টি)</small></div>';
 
-  html += n ? '<table><thead><tr><th class="c" style="width:34px">ক্রম</th><th>বিষয় ও আবেদন</th>' +
-      '<th style="width:104px">অপেক্ষার সময়</th><th style="width:158px">আপনার সিদ্ধান্ত</th></tr></thead><tbody>' +
+  // প্রতিটা বিষয় দুই সারিতে: উপরে বিষয়ের বিবরণ + তারিখ, নিচে পুরো চওড়ায় বসের সিদ্ধান্তের ঘর।
+  // সিদ্ধান্তের ধরনে বিকল্পগুলো পুরো লেখাসহ সরাসরি টিকের ঘরে — আলাদা করে মেলাতে হয় না।
+  html += n ? '<table class="bt"><thead><tr><th class="c" style="width:34px">ক্রম</th><th>বিষয়</th>' +
+      '<th style="width:150px">তারিখ</th></tr></thead><tbody>' +
     P.map(function (x, i) {
       const hot = x.late || x.due || x.priority === 'Must';
       const T = BOSS_T[x.type] || BOSS_T.Approval;
       const opts = x.opts || [];
       const boxes = x.type === 'Decision' && opts.length
-        ? opts.map(function (o, j) { return 'বিকল্প ' + ABC_BN[j]; }).concat(['অন্য সিদ্ধান্ত (মন্তব্যে)', 'আলোচনা প্রয়োজন'])
+        ? opts.map(function (o, j) { return ABC_BN[j] + ') ' + o; }).concat(['অন্য সিদ্ধান্ত (মন্তব্যে লিখুন)', 'আলোচনা প্রয়োজন'])
         : T[3];
-      return '<tr' + (hot ? ' class="hot"' : '') + '><td class="c">' + N(i + 1) + '</td>' +
+      return '<tr class="it' + (hot ? ' hot' : '') + '"><td class="c" rowspan="2">' + N(i + 1) + '</td>' +
         '<td><span class="ty">' + esc(T[0]) + ' · ' + esc(CAT_BN[x.category] || x.category) + '</span><b>' + esc(x.task) + '</b>' +
-          (hot ? '<span class="urg">' + (x.late ? 'সময় পেরিয়েছে' : 'জরুরি') + '</span>' : '') +
-          (x.ask ? '<div class="rq"><i>আবেদন:</i> ' + esc(x.ask) + '</div>' : '') +
+          (hot ? '<span class="urg">জরুরি</span>' : '') +
+          (x.ask ? '<div class="rq"><i>অনুরোধ:</i> ' + esc(x.ask) + '</div>' : '') +
           (x.amt ? '<div class="rq"><i>চাওয়া অর্থ:</i> <b>' + taka(x.amt) + '</b></div>' : '') +
-          (opts.length ? '<div class="rq"><i>বিকল্প:</i>' + opts.map(function (o, j) { return '<span class="op">' + ABC_BN[j] + ') ' + esc(o) + '</span>'; }).join('') + '</div>' : '') +
           (x.note ? '<span class="sm">নোট: ' + esc(x.note) + '</span>' : '') + '</td>' +
-        '<td>' + (x.since ? esc(longDateShort(x.since)) + ' থেকে' : '–') +
-          '<span class="sm">' + (x.days ? N(x.days) + ' দিন ধরে' : 'আজ উপস্থাপিত') + '</span>' +
-          (x.by ? '<span class="sm' + (x.late || x.due ? ' late' : '') + '">শেষ সময়: ' + esc(longDateShort(x.by)) + '</span>' : '') + '</td>' +
-        '<td class="dec">' + boxes.map(ck).join('') +
-          (x.type === 'Fund' ? '<div class="pm">মাধ্যম: <span class="bx"></span>নগদ <span class="bx"></span>চেক <span class="bx"></span>ব্যাংক</div>' : '') +
+        '<td class="dt"><div><i>উপস্থাপন:</i> ' + (x.since ? esc(longDateShort(x.since)) : '–') + '</div>' +
+          (x.by ? '<div' + (x.late || x.due ? ' class="late"' : '') + '><i>শেষ তারিখ:</i> ' + esc(longDateShort(x.by)) + '</div>' : '') + '</td></tr>' +
+        '<tr class="dk"><td colspan="2"><div class="dk-h">সিদ্ধান্ত <small>(প্রযোজ্য ঘরে ✓ দিন)</small></div>' +
+          '<div class="dk-b">' + boxes.map(ck).join('') + '</div>' +
+          (x.type === 'Fund' ? '<div class="pm"><i>মাধ্যম:</i> <span class="bx"></span>নগদ <span class="bx"></span>চেক <span class="bx"></span>ব্যাংক</div>' : '') +
           '<div class="rmk">মন্তব্য:</div></td></tr>';
     }).join('') + '</tbody></table>'
     : '<div class="rp-none">আপনার কাছে কোনো বিষয় অপেক্ষমাণ নেই।</div>';
@@ -3358,8 +3370,9 @@ async function makePdf(d) {
     const page = host.firstChild, top = page.getBoundingClientRect().top;
     const H = Math.ceil(page.scrollHeight);
     // পাতা কাটার নিরাপদ জায়গা — প্রতিটা সারি, তালিকার লাইন আর অংশের নিচে
+    // (বসের রিপোর্টে বিষয়ের সারি .it আর তার সিদ্ধান্তের সারি এক পাতায় থাকে)
     const cuts = [];
-    page.querySelectorAll('tr, li, .rp-h, .rp-stats, .rp-none, .rp-head, .rp-rule').forEach(function (el) {
+    page.querySelectorAll('tr:not(.it), li, .rp-h, .rp-stats, .rp-none, .rp-head, .rp-rule').forEach(function (el) {
       const r = el.getBoundingClientRect();
       if (el.classList.contains('rp-h')) cuts.push(Math.floor(r.top - top));   // শিরোনাম পাতার নিচে একা পড়ে না
       cuts.push(Math.ceil(r.bottom - top));
