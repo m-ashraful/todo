@@ -902,6 +902,8 @@ function callServer(fn, args) {
   .rp .dk-h { font-weight: bold; font-size: 10.5px; border-top: 1px dashed #bbb; padding-top: 5px; }
   .rp .dk-h small { font-weight: normal; color: #666; font-size: 9.5px; }
   .rp .dk-b { display: flex; flex-wrap: wrap; column-gap: 22px; font-size: 10.5px; line-height: 1.9; }
+  .rp .wl { border-bottom: 1px dotted #777; height: 26px; }
+  .rp .rq .op { display: inline-block; margin-left: 12px; }
   .rp .bx { display: inline-block; width: 10px; height: 10px; border: 1px solid #000; vertical-align: -1px; margin-right: 5px; position: relative; }
   .rp .rmk { border-bottom: 1px dotted #777; height: 18px; }
   /* সুতন্নি — শুধু বাংলা অক্ষরে (unicode-range), ইংরেজি তাই Times-এই থাকে। ফাইলটা সাইটের fonts/ ফোল্ডারে।
@@ -2904,7 +2906,7 @@ function fillMore() {
       (AUTH ? '<button class="btn ghost sm" data-act="logout">লগআউট</button>' : '') + '</div></div>' +
     '<div class="panel"><a class="link" href="' + esc(S.boot.sheetUrl) + '" target="_blank" rel="noopener">' +
       ic('sheet') + '<span>Google Sheet খুলুন (ব্যাকএন্ড)</span>' + ic('ext', 16) + '</a></div>' +
-    '<div class="foot">Smart To-Do · v9.12</div>';
+    '<div class="foot">Smart To-Do · v9.13</div>';
 }
 
 /* ---------- নিরাপত্তা (শুধু মালিক দেখেন) ----------
@@ -3233,7 +3235,7 @@ function repPage(d) {
   '</div>';
 }
 /* ---- বসের রিপোর্ট (পুরো বাংলায়, দাপ্তরিক চিঠির ভাষা): প্রাপক/প্রেরক/তারিখ/সূত্র/বিষয় → অপেক্ষার তালিকা,
- *      প্রতিটার পাশে ধরন অনুযায়ী বসের টিকের ঘর (অর্থ ছাড়ে পুরো/আংশিক ৳…/পরে/না + মাধ্যম; সিদ্ধান্তে ক, খ, গ…)
+ *      প্রতিটার নিচে ধরন অনুযায়ী বসের টিকের ঘর (অর্থ ছাড়ে পুরো/আংশিক ৳…/পরে/না; সিদ্ধান্তে টিক নয়, লেখার লাইন)
  *      আর মন্তব্যের লাইন → সেদিনের প্রাপ্ত সিদ্ধান্ত → স্বাক্ষর ---- */
 function bossPage(d) {
   const P = d.pending, D = d.decided, n = P.length, isToday = d.date === d.today, N = bnNum;
@@ -3256,7 +3258,7 @@ function bossPage(d) {
       '<div class="full"><span>বিষয়</span><b>আপনার সদয় অনুমোদন, সম্মতি বা সিদ্ধান্তের অপেক্ষায় থাকা বিষয়সমূহ।</b></div></div>' +
     '<p class="rp-intro">' + (n
       ? 'নিম্নবর্ণিত ' + N(n) + 'টি বিষয় আপনার সদয় অনুমোদন, সম্মতি বা সিদ্ধান্তের জন্য উপস্থাপন করা হলো। ' +
-        'প্রতিটি বিষয়ের নিচে "সিদ্ধান্ত" অংশে প্রযোজ্য ঘরে টিক (✓) চিহ্ন দিয়ে এবং প্রয়োজনে মন্তব্য লিখে দেওয়ার জন্য সবিনয় অনুরোধ করছি। ' +
+        'প্রতিটি বিষয়ের নিচে "সিদ্ধান্ত" অংশে প্রযোজ্য ঘরে টিক (✓) চিহ্ন দিয়ে অথবা লিখে আপনার সিদ্ধান্ত জানানোর জন্য সবিনয় অনুরোধ করছি। ' +
         'সিদ্ধান্ত পাওয়া গেলে সংশ্লিষ্ট কাজগুলো এগিয়ে নেওয়া সম্ভব হবে।'
       : (isToday ? 'আজ' : bd(d.date)) + ' পর্যন্ত আপনার অনুমোদন বা সিদ্ধান্তের জন্য কোনো বিষয় উপস্থাপিত নেই।') + '</p>' +
     '<div class="rp-stats">' +
@@ -3274,20 +3276,21 @@ function bossPage(d) {
       const hot = x.late || x.due || x.priority === 'Must';
       const T = BOSS_T[x.type] || BOSS_T.Approval;
       const opts = x.opts || [];
-      const boxes = x.type === 'Decision' && opts.length
-        ? opts.map(function (o, j) { return ABC_BN[j] + ') ' + o; }).concat(['অন্য সিদ্ধান্ত (মন্তব্যে লিখুন)', 'আলোচনা প্রয়োজন'])
-        : T[3];
+      const write = x.type === 'Decision';   // সিদ্ধান্তে টিকের ঘর নয় — বস নিজের ভাষায় লিখে দেন
       return '<tr class="it' + (hot ? ' hot' : '') + '"><td class="c" rowspan="2">' + N(i + 1) + '</td>' +
         '<td><span class="ty">' + esc(T[0]) + ' · ' + esc(CAT_EN[x.category] || x.category) + '</span><b>' + esc(x.task) + '</b>' +
           (hot ? '<span class="urg">জরুরি</span>' : '') +
           (x.ask ? '<div class="rq"><i>অনুরোধ:</i> ' + esc(x.ask) + '</div>' : '') +
           (x.amt ? '<div class="rq"><i>চাওয়া অর্থ:</i> <b>' + taka(x.amt) + '</b></div>' : '') +
+          (opts.length ? '<div class="rq"><i>প্রস্তাবিত বিকল্প:</i>' + opts.map(function (o, j) { return '<span class="op">' + ABC_BN[j] + ') ' + esc(o) + '</span>'; }).join('') + '</div>' : '') +
           (x.note ? '<span class="sm">নোট: ' + esc(x.note) + '</span>' : '') + '</td>' +
         '<td class="dt"><div><i>উপস্থাপন:</i> ' + (x.since ? esc(longDateShort(x.since)) : '–') + '</div>' +
           (x.by ? '<div' + (x.late || x.due ? ' class="late"' : '') + '><i>শেষ তারিখ:</i> ' + esc(longDateShort(x.by)) + '</div>' : '') + '</td></tr>' +
-        '<tr class="dk"><td colspan="2"><div class="dk-h">সিদ্ধান্ত <small>(প্রযোজ্য ঘরে ✓ দিন)</small></div>' +
-          '<div class="dk-b">' + boxes.map(ck).join('') + '</div>' +
-          '<div class="rmk">মন্তব্য:</div></td></tr>';
+        '<tr class="dk"><td colspan="2">' + (write
+          ? '<div class="dk-h">সিদ্ধান্ত <small>(অনুগ্রহ করে লিখে দিন)</small></div><div class="wl"></div><div class="wl"></div><div class="wl"></div>'
+          : '<div class="dk-h">সিদ্ধান্ত <small>(প্রযোজ্য ঘরে ✓ দিন)</small></div>' +
+            '<div class="dk-b">' + T[3].map(ck).join('') + '</div>' +
+            '<div class="rmk">মন্তব্য:</div>') + '</td></tr>';
     }).join('') + '</tbody></table>'
     : '<div class="rp-none">আপনার কাছে কোনো বিষয় অপেক্ষমাণ নেই।</div>';
 
