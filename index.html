@@ -2090,8 +2090,8 @@ function bossFields() {
       '<div class="hint">বস পুরো, আংশিক বা পরে ছাড় — যেটাই দিন, রিপোর্টে এই অঙ্কের পাশেই টিক দেবেন।</div></div>' : '') +
     (b.t === 'Decision' ? '<div class="fld"><div class="lbl">বিকল্পগুলো <span class="hint">(প্রতি লাইনে একটা, সর্বোচ্চ ৪টা)</span></div>' +
       '<textarea id="fBossOpts" class="inp" rows="3" placeholder="২টা স্টল — ৳৮০,০০০&#10;৩টা স্টল — ৳১,২০,০০০">' + esc(b.opts || '') + '</textarea>' +
-      '<div class="hint">রিপোর্টে ক, খ, গ… হয়ে আসে — বস একটায় টিক দেন।</div></div>' : '') +
-    '<div class="fld"><div class="lbl">কবের মধ্যে দরকার <span class="hint">(ঐচ্ছিক)</span></div>' +
+      '<div class="hint">রিপোর্টে ক, খ, গ… হয়ে আসে — বস লিখে সিদ্ধান্ত জানান।</div></div>' : '') +
+    '<div class="fld"><div class="lbl">Last Date — কবের মধ্যে দরকার <span class="hint">(ঐচ্ছিক)</span></div>' +
       '<div class="tin"><input type="date" id="fBossBy" class="inp" value="' + esc(b.by || '') + '">' +
       '<button class="clr" data-act="f-clear" data-v="fBossBy" aria-label="মুছুন">' + ic('x', 13) + '</button></div></div>';
   if (F.ref && b.since) {
@@ -2839,7 +2839,7 @@ function bossPanel() {
       '<div class="hint">থাকলে WhatsApp বোতাম সরাসরি বসের চ্যাট খোলে; ফাঁকা রাখলে কাকে পাঠাবেন বাছাই করবেন।</div></div></div>';
 }
 /* ---- WhatsApp-এর জন্য ছোট বার্তা। শুধু যা বসের সিদ্ধান্তের জন্য লাগে: ক্রম নম্বর (কাগজের মতোই), বিষয়, ধরন,
- *      অনুরোধ, অঙ্ক, বিকল্প, শেষ তারিখ। প্রাপক/প্রেরক/নিয়ম/প্রাপ্ত সিদ্ধান্ত নয় — বার্তা সরাসরি বসের চ্যাটে যায়।
+ *      অনুরোধ, অঙ্ক, বিকল্প, Last Date। প্রাপক/প্রেরক/নিয়ম/প্রাপ্ত সিদ্ধান্ত নয় — বার্তা সরাসরি বসের চ্যাটে যায়।
  *      WhatsApp-এর *মোটা* / _বাঁকা_ চিহ্ন ব্যবহার করি না — বাংলা শব্দের শেষে (যেমন "পেমেন্ট*") ওরা কাজ করে না,
  *      তারা-চিহ্ন খোলা পড়ে থাকে আর যুক্তাক্ষর ভেঙে দেখায় ---- */
 function bossWaText(d) {
@@ -2857,7 +2857,7 @@ function bossWaText(d) {
     if (x.ask) L.push(one(x.ask));
     if (x.amt) L.push('চাওয়া অর্থ: ' + taka(x.amt));
     if (opts.length) L.push('বিকল্প: ' + opts.map(function (o, j) { return ABC_BN[j] + ') ' + o; }).join('  '));
-    if (x.by) L.push('শেষ তারিখ: ' + longDateShort(x.by));
+    if (x.by) L.push('Last Date: ' + longDateShort(x.by));   // "শেষ তারিখ"-এর চেয়ে পরিষ্কার (ব্যবহারকারীর পছন্দ)
     L.push('');
   });
   return L.join('\n').trim();
@@ -2967,7 +2967,7 @@ function fillMore() {
       (AUTH ? '<button class="btn ghost sm" data-act="logout">লগআউট</button>' : '') + '</div></div>' +
     '<div class="panel"><a class="link" href="' + esc(S.boot.sheetUrl) + '" target="_blank" rel="noopener">' +
       ic('sheet') + '<span>Google Sheet খুলুন (ব্যাকএন্ড)</span>' + ic('ext', 16) + '</a></div>' +
-    '<div class="foot">Smart To-Do · v9.19</div>';
+    '<div class="foot">Smart To-Do · v9.20</div>';
 }
 
 /* ---------- নিরাপত্তা (শুধু মালিক দেখেন) ----------
@@ -3347,7 +3347,7 @@ function bossPage(d) {
           (opts.length ? '<div class="rq"><i>প্রস্তাবিত বিকল্প:</i>' + opts.map(function (o, j) { return '<span class="op">' + ABC_BN[j] + ') ' + esc(o) + '</span>'; }).join('') + '</div>' : '') +
           (x.note ? '<span class="sm">নোট: ' + esc(x.note) + '</span>' : '') + '</td>' +
         '<td class="dt"><div><i>উপস্থাপন:</i> ' + (x.since ? esc(longDateShort(x.since)) : '–') + '</div>' +
-          (x.by ? '<div' + (x.late || x.due ? ' class="late"' : '') + '><i>শেষ তারিখ:</i> ' + esc(longDateShort(x.by)) + '</div>' : '') + '</td></tr>' +
+          (x.by ? '<div' + (x.late || x.due ? ' class="late"' : '') + '><i>Last Date:</i> ' + esc(longDateShort(x.by)) + '</div>' : '') + '</td></tr>' +
         '<tr class="dk"><td colspan="2">' + (write
           ? '<div class="dk-h">সিদ্ধান্ত <small>(অনুগ্রহ করে লিখে দিন)</small></div><div class="wl"></div><div class="wl"></div><div class="wl"></div>'
           : '<div class="dk-h">সিদ্ধান্ত <small>(প্রযোজ্য ঘরে ✓ দিন)</small></div>' +
