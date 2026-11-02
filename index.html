@@ -2835,18 +2835,21 @@ function bossPanel() {
       '<button class="btn ghost" data-act="boss-wa-save">সেভ</button></div>' +
       '<div class="hint">থাকলে WhatsApp বোতাম সরাসরি বসের চ্যাট খোলে; ফাঁকা রাখলে কাকে পাঠাবেন বাছাই করবেন।</div></div></div>';
 }
-/* ---- WhatsApp-এর জন্য ছোট বার্তা (*মোটা*, _বাঁকা_ — WhatsApp-এর নিজের নিয়ম)। শুধু যা বসের সিদ্ধান্তের জন্য লাগে:
- *      ক্রম নম্বর (কাগজের মতোই), বিষয়, ধরন, অনুরোধ, অঙ্ক, বিকল্প, শেষ তারিখ। প্রাপক/প্রেরক/নিয়ম/প্রাপ্ত সিদ্ধান্ত নয় —
- *      বার্তা সরাসরি বসের চ্যাটে যায়, আর বাকিটা কাগজের প্রতিবেদনে আছে ---- */
+/* ---- WhatsApp-এর জন্য ছোট বার্তা। শুধু যা বসের সিদ্ধান্তের জন্য লাগে: ক্রম নম্বর (কাগজের মতোই), বিষয়, ধরন,
+ *      অনুরোধ, অঙ্ক, বিকল্প, শেষ তারিখ। প্রাপক/প্রেরক/নিয়ম/প্রাপ্ত সিদ্ধান্ত নয় — বার্তা সরাসরি বসের চ্যাটে যায়।
+ *      WhatsApp-এর *মোটা* / _বাঁকা_ চিহ্ন ব্যবহার করি না — বাংলা শব্দের শেষে (যেমন "পেমেন্ট*") ওরা কাজ করে না,
+ *      তারা-চিহ্ন খোলা পড়ে থাকে আর যুক্তাক্ষর ভেঙে দেখায় ---- */
 function bossWaText(d) {
   const P = d.pending, N = bnNum;
-  const L = ['*অনুমোদন ও সিদ্ধান্ত প্রতিবেদন*', fmt(d.date, { day: 'numeric', month: 'long', year: 'numeric' }), '',
-             'নিম্নবর্ণিত ' + N(P.length) + 'টি বিষয়ে আপনার সদয় সিদ্ধান্ত প্রয়োজন:', ''];
+  const one = function (s) { return String(s || '').replace(/\s+/g, ' ').trim(); };
+  const L = ['অনুমোদন ও সিদ্ধান্ত প্রতিবেদন', fmt(d.date, { day: 'numeric', month: 'long', year: 'numeric' }), '',
+             'নিম্নবর্ণিত ' + N(P.length) + 'টি বিষয় আপনার সদয় অনুমোদন, সম্মতি বা সিদ্ধান্তের জন্য উপস্থাপন করা হলো। ' +
+             'সিদ্ধান্ত পাওয়া গেলে সংশ্লিষ্ট কাজগুলো এগিয়ে নেওয়া সম্ভব হবে।', ''];
   P.forEach(function (x, i) {
     const opts = x.opts || [];
-    L.push('*' + N(i + 1) + '. ' + x.task + '* (' + bossT(x.type) + ')' + (x.late || x.due || x.priority === 'Must' ? ' — _জরুরি_' : ''));
-    if (x.ask) L.push(x.ask);
-    if (x.amt) L.push('চাওয়া অর্থ: *' + taka(x.amt) + '*');
+    L.push(N(i + 1) + '. ' + one(x.task) + ' (' + bossT(x.type) + ')' + (x.late || x.due || x.priority === 'Must' ? ' — জরুরি' : ''));
+    if (x.ask) L.push(one(x.ask));
+    if (x.amt) L.push('চাওয়া অর্থ: ' + taka(x.amt));
     if (opts.length) L.push('বিকল্প: ' + opts.map(function (o, j) { return ABC_BN[j] + ') ' + o; }).join('  '));
     if (x.by) L.push('শেষ তারিখ: ' + longDateShort(x.by));
     L.push('');
@@ -2958,7 +2961,7 @@ function fillMore() {
       (AUTH ? '<button class="btn ghost sm" data-act="logout">লগআউট</button>' : '') + '</div></div>' +
     '<div class="panel"><a class="link" href="' + esc(S.boot.sheetUrl) + '" target="_blank" rel="noopener">' +
       ic('sheet') + '<span>Google Sheet খুলুন (ব্যাকএন্ড)</span>' + ic('ext', 16) + '</a></div>' +
-    '<div class="foot">Smart To-Do · v9.16</div>';
+    '<div class="foot">Smart To-Do · v9.17</div>';
 }
 
 /* ---------- নিরাপত্তা (শুধু মালিক দেখেন) ----------
