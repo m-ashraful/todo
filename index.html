@@ -1256,7 +1256,7 @@ const CAT = {
 };
 // ক্যাটাগরি — শিটে ইংরেজি নাম, অ্যাপে বাংলা (পুরনো Task/Event/Call সার্ভার নিজেই নতুনটায় বদলে নেয়)
 // সংস্করণ এক জায়গায় — ফোনের নিচে আর কম্পিউটারের সাইডবারে একই নম্বর (আগে সাইডবারে v9.7 আটকে ছিল)
-const APP_VER = 'v9.21';
+const APP_VER = 'v9.22';
 const CAT_BN = {
   'Routine': 'রুটিন চেক', 'Content': 'কন্টেন্ট', 'Shooting': 'শ্যুটিং', 'Partner': 'পার্টনার ও চুক্তি',
   'Meeting': 'মিটিং ও কল', 'Payment': 'পেমেন্ট', 'Boss Seating': 'বসের সাথে', 'Personal': 'ব্যক্তিগত', 'Other': 'অন্যান্য'
@@ -1325,8 +1325,8 @@ const BOSS_T = {
                 ['প্রস্তাবমতো', 'অন্য সিদ্ধান্ত (মন্তব্যে)', 'আলোচনা প্রয়োজন']],
   Signature:   ['স্বাক্ষর', 'Signature', 'কাগজে বসের সই লাগবে',
                 ['স্বাক্ষর করা হলো', 'সংশোধন করে আনুন', 'স্বাক্ষর হবে না']],
-  Fund:        ['অর্থ ছাড়', 'Fund Release', 'টাকা ছাড় বা পেমেন্টের অনুমোদন — অঙ্কটা লিখে দিন',
-                ['পুরো অর্থ ছাড়', 'আংশিক ছাড়: ৳ …', 'পরে ছাড়, তারিখ: …', 'ছাড় হবে না']],
+  Fund:        ['পেমেন্ট', 'Payment', 'পেমেন্টের অনুমোদন — টাকার পরিমাণটা লিখে দিন',
+                ['পুরো পেমেন্ট', 'আংশিক পেমেন্ট: ৳ …', 'পরে পেমেন্ট, তারিখ: …', 'পেমেন্ট হবে না']],
   Information: ['তথ্য / আপডেট', 'Information', 'বসের কাছ থেকে তথ্য বা আপডেট দরকার',
                 ['তথ্য দেওয়া হলো (মন্তব্যে)', 'পরে জানাবেন, তারিখ: …', 'আলোচনা প্রয়োজন']],
   Discussion:  ['আলোচনা', 'Discussion', 'বসের সাথে বসে ঠিক করতে হবে',
@@ -1338,7 +1338,7 @@ const BOSS_RO = {
   Permission:  [['Approved', 'অনুমতি দেওয়া হলো'], ['Rejected', 'অনুমতি দেওয়া হলো না'], ['Revise', 'আরও তথ্য চাই']],
   Decision:    [['Approved', 'সিদ্ধান্ত হয়েছে'], ['Deferred', 'পরে জানাবেন'], ['Revise', 'আরও তথ্য চাই']],
   Signature:   [['Approved', 'স্বাক্ষর হয়েছে'], ['Revise', 'সংশোধন করে আনুন'], ['Rejected', 'স্বাক্ষর হবে না']],
-  Fund:        [['Approved', 'পুরো অর্থ ছাড়'], ['Partial', 'আংশিক ছাড়'], ['Deferred', 'পরে ছাড়'], ['Rejected', 'ছাড় হবে না']],
+  Fund:        [['Approved', 'পুরো পেমেন্ট'], ['Partial', 'আংশিক পেমেন্ট'], ['Deferred', 'পরে পেমেন্ট'], ['Rejected', 'পেমেন্ট হবে না']],
   Information: [['Noted', 'তথ্য পাওয়া গেছে'], ['Deferred', 'পরে জানাবেন']],
   Discussion:  [['Noted', 'আলোচনা হয়েছে'], ['Deferred', 'বৈঠকের সময় ঠিক হলো'], ['Rejected', 'প্রয়োজন নেই']]
 };
@@ -1355,7 +1355,7 @@ function bossRL(t, r) {
                            Rejected: 'নাকচ', Revise: 'সংশোধন', Noted: 'নিষ্পত্তি' })[r] || r;
 }
 function taka(n) { return '৳' + Number(n).toLocaleString('bn-BD'); }
-// উত্তর এক লাইনে — "আংশিক ছাড় — ৳২,০০,০০০ · চেক"   (b: Boss ঘর বা রিপোর্টের সারি — t/type, r/reply)
+// উত্তর এক লাইনে — "আংশিক পেমেন্ট — ৳২,০০,০০০"   (b: Boss ঘর বা রিপোর্টের সারি — t/type, r/reply)
 function bossRText(b) {
   const t = b.t || b.type, r = b.r || b.reply;
   const bits = [];
@@ -2074,7 +2074,7 @@ function optList(v) {
 }
 
 /* ফর্মের "বসের কাছে" অংশ — চালু করলে রিপোর্ট ট্যাবের "বসের টেবিলে" আর বসের রিপোর্টে যায়।
- * অর্থ ছাড়ে চাওয়া অঙ্ক, সিদ্ধান্তে বিকল্পগুলো — রিপোর্টে বস সেগুলো দেখেই টিক দেন। */
+ * পেমেন্টে টাকার পরিমাণ, সিদ্ধান্তে বিকল্পগুলো — রিপোর্টে বস সেগুলো দেখেই টিক দেন। */
 function bossFields() {
   const b = F.boss;
   let h = '<div class="fld"><div class="swrow"><div><div class="lbl" style="margin:0">বসের কাছে</div>' +
@@ -2089,9 +2089,9 @@ function bossFields() {
     '<div class="fld"><div class="lbl">বসের কাছে ঠিক কী চান</div>' +
       '<textarea id="fBossAsk" class="inp" rows="2" maxlength="300" placeholder="যেমন: রকমারির চুক্তির খসড়া অনুমোদন — ১২% কমিশনে">' + esc(b.ask || '') + '</textarea>' +
       '<div class="hint">রিপোর্টে "আবেদন" হিসেবে এটাই যায় — এক লাইনে পরিষ্কার করে লিখুন।</div></div>' +
-    (b.t === 'Fund' ? '<div class="fld"><div class="lbl">চাওয়া অর্থ (৳)</div>' +
+    (b.t === 'Fund' ? '<div class="fld"><div class="lbl">টাকার পরিমাণ (৳)</div>' +
       '<input id="fBossAmt" class="inp" inputmode="decimal" autocomplete="off" placeholder="যেমন: ৩,৪৫,০০০" value="' + esc(b.amt || '') + '">' +
-      '<div class="hint">বস পুরো, আংশিক বা পরে ছাড় — যেটাই দিন, রিপোর্টে এই অঙ্কের পাশেই টিক দেবেন।</div></div>' : '') +
+      '<div class="hint">বস পুরো, আংশিক বা পরে পেমেন্ট — যেটাই দিন, রিপোর্টে এই অঙ্কের পাশেই টিক দেবেন।</div></div>' : '') +
     (b.t === 'Decision' ? '<div class="fld"><div class="lbl">বিকল্পগুলো <span class="hint">(প্রতি লাইনে একটা, সর্বোচ্চ ৪টা)</span></div>' +
       '<textarea id="fBossOpts" class="inp" rows="3" placeholder="২টা স্টল — ৳৮০,০০০&#10;৩টা স্টল — ৳১,২০,০০০">' + esc(b.opts || '') + '</textarea>' +
       '<div class="hint">রিপোর্টে ক, খ, গ… হয়ে আসে — বস লিখে সিদ্ধান্ত জানান।</div></div>' : '') +
@@ -2109,7 +2109,7 @@ function bossFields() {
 }
 
 /* ---------- বসের উত্তর ----------
- * বস কাগজে/মুখে সিদ্ধান্ত দিলে এখানে লেখা। ধরন অনুযায়ী বোতাম (অর্থ ছাড়: পুরো / আংশিক / পরে / না),
+ * বস কাগজে/মুখে সিদ্ধান্ত দিলে এখানে লেখা। ধরন অনুযায়ী বোতাম (পেমেন্ট: পুরো / আংশিক / পরে / না),
  * আর যা লাগে তার ঘর — আংশিক হলে অঙ্ক, পরে হলে তারিখ, শর্তসাপেক্ষে হলে শর্ত, সিদ্ধান্তে কোন বিকল্প।
  * সেভ করলে কাজটা অপেক্ষার তালিকা থেকে সরে রিপোর্টের "প্রাপ্ত সিদ্ধান্ত"-এ যায়। */
 function openBossReply(x) {   // x: { row, task, date, boss: { t, ask, amt, opts } }
@@ -2135,11 +2135,11 @@ function drawBossReply() {
       }).join('') +
       '<button class="chip' + (D.opt === -2 ? ' on' : '') + '" style="--c:' + BOSS_C + '" data-act="boss-opt" data-v="-2">অন্য সিদ্ধান্ত</button></div></div>';
   }
-  if (p === 'Partial') extra += '<div class="fld"><div class="lbl">কত টাকা ছাড় হলো (৳)</div>' +
+  if (p === 'Partial') extra += '<div class="fld"><div class="lbl">কত টাকা পেমেন্ট হবে (৳)</div>' +
     '<input id="rAmt" class="inp" inputmode="decimal" autocomplete="off" placeholder="যেমন: ২,০০,০০০" value="' + esc(D.amt) + '">' +
     (b.amt ? '<div class="hint">চাওয়া ছিল ' + taka(b.amt) + '</div>' : '') + '</div>';
   if (p === 'Deferred') extra += '<div class="fld"><div class="lbl">' +
-    (fund ? 'কবে ছাড় হবে' : b.t === 'Discussion' ? 'বৈঠকের তারিখ' : 'কবে জানাবেন') + '</div>' +
+    (fund ? 'কবে পেমেন্ট হবে' : b.t === 'Discussion' ? 'বৈঠকের তারিখ' : 'কবে জানাবেন') + '</div>' +
     '<input type="date" id="rDate" class="inp" value="' + esc(D.date) + '"></div>';
   const needNote = p === 'Conditional' || (b.t === 'Decision' && p === 'Approved' && (!opts.length || D.opt === -2));
   const noteLbl = p === 'Conditional' ? 'শর্ত' : needNote ? 'কী সিদ্ধান্ত হলো' : 'বসের মন্তব্য <span class="hint">(ঐচ্ছিক)</span>';
@@ -2148,7 +2148,7 @@ function drawBossReply() {
     '<button class="x" data-act="close" aria-label="বন্ধ">' + ic('x') + '</button></div>' +
     '<div class="bopt-ask"><b>' + esc(x.task) + '</b>' +
       (b.ask ? '<span>' + esc((BOSS_T[b.t] || [b.t])[0]) + ' — ' + esc(b.ask) + '</span>' : '') +
-      (b.amt ? '<span>চাওয়া অর্থ: <b style="display:inline">' + taka(b.amt) + '</b></span>' : '') +
+      (b.amt ? '<span>টাকার পরিমাণ: <b style="display:inline">' + taka(b.amt) + '</b></span>' : '') +
       (opts.length ? '<span>' + opts.map(function (o, i) { return ABC_BN[i] + ') ' + esc(o); }).join(' &nbsp; ') + '</span>' : '') + '</div>' +
     '<div class="lbl" style="margin-top:14px">বসের সিদ্ধান্ত</div>' +
     '<div class="bopts">' + (BOSS_RO[b.t] || BOSS_RO.Approval).map(function (o) {
@@ -2169,7 +2169,7 @@ async function saveBossReply(btn) {
   const err = function (m) { const e = $('#rErr'); e.textContent = m; e.classList.add('show'); };
   const ex = { amt: p === 'Partial' ? D.amt : '', date: p === 'Deferred' ? D.date : '', mode: D.mode,
                opt: b.t === 'Decision' && p === 'Approved' && D.opt >= 0 ? ABC_BN[D.opt] + ') ' + opts[D.opt] : '' };
-  if (p === 'Partial' && !String(D.amt).trim()) return err('কত টাকা ছাড় হলো লিখুন।');
+  if (p === 'Partial' && !String(D.amt).trim()) return err('কত টাকা পেমেন্ট হবে লিখুন।');
   if (p === 'Deferred' && !D.date) return err('তারিখটা দিন।');
   if (p === 'Conditional' && !D.note.trim()) return err('শর্তটা লিখুন।');
   if (b.t === 'Decision' && p === 'Approved') {
@@ -2852,7 +2852,7 @@ function bossWaText(d) {
   const P = d.pending, N = bnNum;
   const one = function (s) { return String(s || '').replace(/\s+/g, ' ').trim(); };
   const L = ['অনুমোদন ও সিদ্ধান্ত প্রতিবেদন', fmt(d.date, { day: 'numeric', month: 'long', year: 'numeric' }), '',
-             'নিম্নবর্ণিত ' + N(P.length) + 'টি বিষয় আপনার সদয় অনুমোদন, সম্মতি বা সিদ্ধান্তের জন্য উপস্থাপন করা হলো। ' +
+             'আসসালামুয়ালাইকুম। নিম্নবর্ণিত ' + N(P.length) + 'টি বিষয় আপনার সদয় অনুমোদন, সম্মতি বা সিদ্ধান্তের জন্য উপস্থাপন করা হলো। ' +
              'সিদ্ধান্ত পাওয়া গেলে সংশ্লিষ্ট কাজগুলো এগিয়ে নেওয়া সম্ভব হবে।', ''];
   P.forEach(function (x, i) {
     const opts = x.opts || [];
@@ -2861,7 +2861,7 @@ function bossWaText(d) {
     L.push(N(i + 1) + '. ' + one(x.task) + ' (' + (BOSS_T[x.type] || [x.type])[0] +
       (x.late || x.due || x.priority === 'Must' ? ', জরুরি' : '') + ')');
     if (x.ask) L.push(one(x.ask));
-    if (x.amt) L.push('চাওয়া অর্থ: ' + taka(x.amt));
+    if (x.amt) L.push('টাকার পরিমাণ: ' + taka(x.amt));
     if (opts.length) L.push('বিকল্প: ' + opts.map(function (o, j) { return ABC_BN[j] + ') ' + o; }).join('  '));
     if (x.by) L.push('Last Date: ' + longDateShort(x.by));   // "শেষ তারিখ"-এর চেয়ে পরিষ্কার (ব্যবহারকারীর পছন্দ)
     L.push('');
@@ -3303,7 +3303,7 @@ function repPage(d) {
   '</div>';
 }
 /* ---- বসের রিপোর্ট (পুরো বাংলায়, দাপ্তরিক চিঠির ভাষা): প্রাপক/প্রেরক/তারিখ/সূত্র/বিষয় → অপেক্ষার তালিকা,
- *      প্রতিটার নিচে ধরন অনুযায়ী বসের টিকের ঘর (অর্থ ছাড়ে পুরো/আংশিক ৳…/পরে/না; সিদ্ধান্তে টিক নয়, লেখার লাইন)
+ *      প্রতিটার নিচে ধরন অনুযায়ী বসের টিকের ঘর (পেমেন্টে পুরো/আংশিক ৳…/পরে/না; সিদ্ধান্তে টিক নয়, লেখার লাইন)
  *      আর মন্তব্যের লাইন → সেদিনের প্রাপ্ত সিদ্ধান্ত → স্বাক্ষর ---- */
 function bossPage(d) {
   const P = d.pending, D = d.decided, n = P.length, isToday = d.date === d.today, N = bnNum;
@@ -3332,7 +3332,7 @@ function bossPage(d) {
     '<div class="rp-stats">' +
       '<div><b>' + N(n) + '</b><span>উপস্থাপিত বিষয়</span></div>' +
       '<div><b>' + N(d.urgent) + '</b><span>জরুরি</span></div>' +
-      '<div><b>' + N(funds.length) + '</b><span>অর্থ ছাড়ের আবেদন' + (fund ? ' · মোট ' + taka(fund) : '') + '</span></div>' +
+      '<div><b>' + N(funds.length) + '</b><span>পেমেন্টের আবেদন' + (fund ? ' · মোট ' + taka(fund) : '') + '</span></div>' +
       '<div><b>' + N(D.length) + '</b><span>' + (isToday ? 'আজকের সিদ্ধান্ত' : 'সেদিনের সিদ্ধান্ত') + '</span></div></div>' +
     '<div class="rp-h">ক. সিদ্ধান্তের জন্য উপস্থাপিত বিষয় <small>(' + N(n) + 'টি)</small></div>';
 
@@ -3346,10 +3346,10 @@ function bossPage(d) {
       const opts = x.opts || [];
       const write = x.type === 'Decision';   // সিদ্ধান্তে টিকের ঘর নয় — বস নিজের ভাষায় লিখে দেন
       return '<tr class="it' + (hot ? ' hot' : '') + '"><td class="c" rowspan="2">' + N(i + 1) + '</td>' +
-        '<td><span class="ty">' + esc(T[0]) + ' · ' + esc(CAT_EN[x.category] || x.category) + '</span><b>' + esc(x.task) + '</b>' +
+        '<td><span class="ty">' + esc(T[0]) + (x.type === 'Fund' && x.category === 'Payment' ? '' : ' · ' + esc(CAT_EN[x.category] || x.category)) + '</span><b>' + esc(x.task) + '</b>' +
           (hot ? '<span class="urg">জরুরি</span>' : '') +
           (x.ask ? '<div class="rq"><i>অনুরোধ:</i> ' + esc(x.ask) + '</div>' : '') +
-          (x.amt ? '<div class="rq"><i>চাওয়া অর্থ:</i> <b>' + taka(x.amt) + '</b></div>' : '') +
+          (x.amt ? '<div class="rq"><i>টাকার পরিমাণ:</i> <b>' + taka(x.amt) + '</b></div>' : '') +
           (opts.length ? '<div class="rq"><i>প্রস্তাবিত বিকল্প:</i>' + opts.map(function (o, j) { return '<span class="op">' + ABC_BN[j] + ') ' + esc(o) + '</span>'; }).join('') + '</div>' : '') +
           (x.note ? '<span class="sm">নোট: ' + esc(x.note) + '</span>' : '') + '</td>' +
         '<td class="dt"><div><i>উপস্থাপন:</i> ' + (x.since ? esc(longDateShort(x.since)) : '–') + '</div>' +
