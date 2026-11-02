@@ -896,7 +896,7 @@ function callServer(fn, args) {
   .rp .bt tr.it td { border-bottom: 0; padding-top: 7px; }
   .rp .bt tr.it td.c { border-bottom: 1px solid #b5b5b5; padding-top: 7px; }
   .rp .bt td.dt { font-size: 10.5px; line-height: 1.7; }
-  .rp .bt td.dt i, .rp .pm i { font-style: normal; color: #555; }
+  .rp .bt td.dt i { font-style: normal; color: #555; }
   .rp .bt td.dt .late { font-weight: bold; }
   .rp .bt tr.dk td { padding: 2px 8px 6px; }
   .rp .dk-h { font-weight: bold; font-size: 10.5px; border-top: 1px dashed #bbb; padding-top: 5px; }
@@ -920,8 +920,6 @@ function callServer(fn, args) {
   .rp.bn .urg { letter-spacing: 0; font-size: 9px; }
   .rp .ck { white-space: nowrap; }
   .rp .blank { display: inline-block; width: 58px; border-bottom: 1px dotted #555; margin-left: 3px; height: 1em; vertical-align: -2px; }
-  .rp .pm { font-size: 10.5px; line-height: 1.9; }
-  .rp .pm .bx { margin: 0 5px 0 10px; }
   .rp.bn .rmk { font-size: 10px; color: #555; height: auto; padding-top: 2px; line-height: 2.2; }
   .rp tr.hot td:first-child { box-shadow: inset 3px 0 0 #000; font-weight: bold; }
   @media (max-width: 520px) {
@@ -1312,9 +1310,9 @@ const BOSS_C = '#BE185D';
 // [বাংলা, English, ব্যাখ্যা, কাগজে বসের টিকের ঘর — "…" = হাতে লেখার ফাঁকা জায়গা]
 const BOSS_T = {
   Approval:    ['অনুমোদন', 'Approval', 'কাজ, খরচ বা প্রস্তাবের অনুমোদন',
-                ['অনুমোদিত', 'শর্তসাপেক্ষে অনুমোদিত', 'অনুমোদিত নয়', 'আলোচনা প্রয়োজন']],
+                ['অনুমোদিত', 'অনুমোদিত নয়', 'আলোচনা প্রয়োজন']],
   Permission:  ['অনুমতি / সম্মতি', 'Permission', 'এগোনোর আগে বসের সম্মতি দরকার',
-                ['অনুমতি দেওয়া হলো', 'শর্তসাপেক্ষে অনুমতি', 'অনুমতি দেওয়া হলো না', 'আলোচনা প্রয়োজন']],
+                ['অনুমতি দেওয়া হলো', 'অনুমতি দেওয়া হলো না', 'আলোচনা প্রয়োজন']],
   Decision:    ['সিদ্ধান্ত', 'Decision', 'কয়েকটা পথের একটা বেছে দিতে হবে — বিকল্পগুলো লিখে দিন',
                 ['প্রস্তাবমতো', 'অন্য সিদ্ধান্ত (মন্তব্যে)', 'আলোচনা প্রয়োজন']],
   Signature:   ['স্বাক্ষর', 'Signature', 'কাগজে বসের সই লাগবে',
@@ -1328,8 +1326,8 @@ const BOSS_T = {
 };
 // অ্যাপে বসের উত্তর লেখার বোতাম — ধরন অনুযায়ী (একই কোডের নাম ধরনভেদে আলাদা)
 const BOSS_RO = {
-  Approval:    [['Approved', 'অনুমোদিত'], ['Conditional', 'শর্তসাপেক্ষে অনুমোদিত'], ['Rejected', 'অনুমোদিত নয়'], ['Revise', 'সংশোধন করে আবার দিন']],
-  Permission:  [['Approved', 'অনুমতি দেওয়া হলো'], ['Conditional', 'শর্তসাপেক্ষে অনুমতি'], ['Rejected', 'অনুমতি দেওয়া হলো না'], ['Revise', 'আরও তথ্য চাই']],
+  Approval:    [['Approved', 'অনুমোদিত'], ['Rejected', 'অনুমোদিত নয়'], ['Revise', 'সংশোধন করে আবার দিন']],
+  Permission:  [['Approved', 'অনুমতি দেওয়া হলো'], ['Rejected', 'অনুমতি দেওয়া হলো না'], ['Revise', 'আরও তথ্য চাই']],
   Decision:    [['Approved', 'সিদ্ধান্ত হয়েছে'], ['Deferred', 'পরে জানাবেন'], ['Revise', 'আরও তথ্য চাই']],
   Signature:   [['Approved', 'স্বাক্ষর হয়েছে'], ['Revise', 'সংশোধন করে আনুন'], ['Rejected', 'স্বাক্ষর হবে না']],
   Fund:        [['Approved', 'পুরো অর্থ ছাড়'], ['Partial', 'আংশিক ছাড়'], ['Deferred', 'পরে ছাড়'], ['Rejected', 'ছাড় হবে না']],
@@ -2134,10 +2132,6 @@ function drawBossReply() {
   if (p === 'Deferred') extra += '<div class="fld"><div class="lbl">' +
     (fund ? 'কবে ছাড় হবে' : b.t === 'Discussion' ? 'বৈঠকের তারিখ' : 'কবে জানাবেন') + '</div>' +
     '<input type="date" id="rDate" class="inp" value="' + esc(D.date) + '"></div>';
-  if (fund && (p === 'Approved' || p === 'Partial')) extra += '<div class="fld"><div class="lbl">মাধ্যম <span class="hint">(ঐচ্ছিক)</span></div><div class="chips">' +
-    Object.keys(PAY_MODE).map(function (m) {
-      return '<button class="chip' + (D.mode === m ? ' on' : '') + '" data-act="boss-mode" data-v="' + m + '">' + PAY_MODE[m] + '</button>';
-    }).join('') + '</div></div>';
   const needNote = p === 'Conditional' || (b.t === 'Decision' && p === 'Approved' && (!opts.length || D.opt === -2));
   const noteLbl = p === 'Conditional' ? 'শর্ত' : needNote ? 'কী সিদ্ধান্ত হলো' : 'বসের মন্তব্য <span class="hint">(ঐচ্ছিক)</span>';
 
@@ -2910,7 +2904,7 @@ function fillMore() {
       (AUTH ? '<button class="btn ghost sm" data-act="logout">লগআউট</button>' : '') + '</div></div>' +
     '<div class="panel"><a class="link" href="' + esc(S.boot.sheetUrl) + '" target="_blank" rel="noopener">' +
       ic('sheet') + '<span>Google Sheet খুলুন (ব্যাকএন্ড)</span>' + ic('ext', 16) + '</a></div>' +
-    '<div class="foot">Smart To-Do · v9.11</div>';
+    '<div class="foot">Smart To-Do · v9.12</div>';
 }
 
 /* ---------- নিরাপত্তা (শুধু মালিক দেখেন) ----------
@@ -3293,7 +3287,6 @@ function bossPage(d) {
           (x.by ? '<div' + (x.late || x.due ? ' class="late"' : '') + '><i>শেষ তারিখ:</i> ' + esc(longDateShort(x.by)) + '</div>' : '') + '</td></tr>' +
         '<tr class="dk"><td colspan="2"><div class="dk-h">সিদ্ধান্ত <small>(প্রযোজ্য ঘরে ✓ দিন)</small></div>' +
           '<div class="dk-b">' + boxes.map(ck).join('') + '</div>' +
-          (x.type === 'Fund' ? '<div class="pm"><i>মাধ্যম:</i> <span class="bx"></span>নগদ <span class="bx"></span>চেক <span class="bx"></span>ব্যাংক</div>' : '') +
           '<div class="rmk">মন্তব্য:</div></td></tr>';
     }).join('') + '</tbody></table>'
     : '<div class="rp-none">আপনার কাছে কোনো বিষয় অপেক্ষমাণ নেই।</div>';
@@ -3656,7 +3649,6 @@ document.addEventListener('click', function (e) {
     case 'bq-open':  { const x = bossItem(row); if (x) openBossReply({ row: x.row, task: x.task, date: x.date, boss: { t: x.type, ask: x.ask, amt: x.amt, opts: x.opts } }); break; }
     case 'boss-pick': readReplyDraft(); S.replyPick = v; drawBossReply(); break;
     case 'boss-opt':  readReplyDraft(); S.replyDraft.opt = Number(v); drawBossReply(); break;
-    case 'boss-mode': readReplyDraft(); S.replyDraft.mode = S.replyDraft.mode === v ? '' : v; drawBossReply(); break;
     case 'boss-save': saveBossReply(el); break;
     case 'boss-name-save': saveBossName(el); break;
     case 'f-copy':
