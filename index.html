@@ -864,6 +864,7 @@ function callServer(fn, args) {
   @media (prefers-color-scheme: dark) { .bq .go { color: #F472B6; } }
   .bq-more { font-size: 12px; color: var(--ink-3); text-align: center; padding: 6px 0 2px; }
   .boss-open { width: 100%; margin-top: 10px; background: #BE185D; }
+  .boss-wa { width: 100%; margin-top: 8px; background: #16A34A; color: #fff; }
   .bopt-ask { background: var(--surface-2); border-radius: 12px; padding: 10px 12px; font-size: 13px; }
   .bopt-ask b { display: block; font-size: 14px; }
   .bopt-ask span { display: block; color: var(--ink-2); margin-top: 3px; }
@@ -1421,7 +1422,8 @@ const ICONS = {
   download: '<path d="M12 3v12M7 10l5 5 5-5"/><path d="M4 21h16"/>',
   share: '<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/>',
   file: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/>',
-  pen: '<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/>'
+  pen: '<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/>',
+  wa: '<path d="M3 21l1.7-5A8.5 8.5 0 1 1 8 19.3z"/><path d="M9 9.5c0 3 2.5 5.5 5.5 5.5l1.2-1.4-2-1-.9.8a4 4 0 0 1-2.2-2.2l.8-.9-1-2z"/>'
 };
 
 function ic(name, size) {
@@ -2823,10 +2825,59 @@ function bossPanel() {
     (Q.pending.length > 8 ? '<div class="bq-more">আরও ' + bnNum(Q.pending.length - 8) + 'টা — রিপোর্টে সব আছে</div>' : '');
   return '<div class="panel"><h3>' + ic('pen') + ' বসের টেবিলে<small>অনুমোদন · সম্মতি · সিদ্ধান্ত</small></h3>' + body +
     '<button class="btn primary boss-open" data-act="report" data-kind="boss">' + ic('file', 16) + ' অনুমোদন ও সিদ্ধান্ত প্রতিবেদন</button>' +
+    (Q && !Q.error && (Q.pending.length || Q.decided.length) ? '<button class="btn boss-wa" data-act="boss-wa">' + ic('wa', 16) + ' WhatsApp-এ পাঠান</button>' : '') +
     '<div class="fld"><div class="lbl">রিপোর্ট যাঁর টেবিলে যাবে</div>' +
       '<div class="prow" style="margin:0"><input id="bossName" class="inp" maxlength="80" autocomplete="off" placeholder="যেমন: Managing Director" value="' + esc(S.boot.bossName || '') + '">' +
       '<button class="btn ghost" data-act="boss-name-save">সেভ</button></div>' +
       '<div class="hint">রিপোর্টের "প্রাপক" লাইনে বসে। আগের দিনের রিপোর্ট: নিচের তারিখ বদলে এই বোতাম।</div></div></div>';
+}
+/* ---- WhatsApp-এর জন্য একই প্রতিবেদন লেখা আকারে (*মোটা*, _বাঁকা_ — WhatsApp-এর নিজের নিয়ম)।
+ *      ক্রম নম্বর কাগজের মতোই, তাই বস "২ — অনুমোদিত" লিখে উত্তর দিলে অ্যাপে মিলিয়ে বসানো সহজ ---- */
+function bossWaText(d) {
+  const P = d.pending, D = d.decided, N = bnNum, L = [];
+  const bd = function (k) { return fmt(k, { day: 'numeric', month: 'long', year: 'numeric' }); };
+  const plain = function (s) { return s.replace(/\s*…/g, '').replace(/[:\s৳]+$/, ''); };   // "আংশিক ছাড়: ৳ …" → "আংশিক ছাড়"
+  L.push('*' + ORG_NAME + '*', '*অনুমোদন ও সিদ্ধান্ত প্রতিবেদন*', 'তারিখ: ' + bd(d.date), 'প্রাপক: ' + d.bossName, '');
+  if (P.length) {
+    L.push('নিম্নবর্ণিত ' + N(P.length) + 'টি বিষয় আপনার সদয় অনুমোদন, সম্মতি বা সিদ্ধান্তের জন্য উপস্থাপন করা হলো।', '');
+    P.forEach(function (x, i) {
+      const T = BOSS_T[x.type] || BOSS_T.Approval, opts = x.opts || [];
+      L.push('*' + N(i + 1) + '. ' + x.task + '*' + (x.late || x.due || x.priority === 'Must' ? ' — _জরুরি_' : ''));
+      L.push('ধরন: ' + T[0] + ' · ' + (CAT_EN[x.category] || x.category));
+      if (x.ask) L.push('অনুরোধ: ' + x.ask);
+      if (x.amt) L.push('চাওয়া অর্থ: *' + taka(x.amt) + '*');
+      if (opts.length) L.push('প্রস্তাবিত বিকল্প: ' + opts.map(function (o, j) { return ABC_BN[j] + ') ' + o; }).join('  '));
+      if (x.by) L.push('শেষ তারিখ: ' + longDateShort(x.by));
+      L.push('সিদ্ধান্ত: ' + (x.type === 'Decision' ? '_অনুগ্রহ করে লিখে জানান_'
+        : '_' + T[3].map(plain).join(' / ') + '_'), '');
+    });
+    // উদাহরণ এই বার্তার প্রথম দুটো বিষয় থেকেই — বসের কাছে মিলিয়ে বোঝা সহজ
+    L.push('*উত্তর দেওয়ার নিয়ম:* ক্রম নম্বর লিখে পাশে সিদ্ধান্ত লিখুন। যেমন:');
+    P.slice(0, 2).forEach(function (x, i) {
+      L.push(N(i + 1) + ' — ' + (x.type === 'Decision' ? ((x.opts || []).length ? 'বিকল্প ক' : 'আপনার সিদ্ধান্ত')
+        : plain((BOSS_T[x.type] || BOSS_T.Approval)[3][0])));
+    });
+    L.push('');
+  } else L.push('আজ পর্যন্ত আপনার সিদ্ধান্তের জন্য কোনো বিষয় উপস্থাপিত নেই।', '');
+  if (D.length) {
+    L.push('*প্রাপ্ত সিদ্ধান্ত* (' + (d.date === d.today ? 'আজ' : bd(d.date)) + ')');
+    D.forEach(function (x, i) { L.push(N(i + 1) + '. ' + x.task + ' — ' + bossRText(x) + (x.rn ? ' (' + x.rn + ')' : '')); });
+    L.push('');
+  }
+  L.push('— ' + OWNER_NAME);
+  return L.join('\n');
+}
+// লেখাটা কপি করে WhatsApp খোলে — কাকে পাঠাবেন সেখানে বাছাই। খোলা না গেলে কপি করা লেখা বসিয়ে দিলেই হয়
+async function sendBossWa(d) {
+  if (!d) return;
+  const text = bossWaText(d);
+  // কপি শুরু করে সঙ্গে সঙ্গে খোলা — আগে await করলে কিছু ব্রাউজার নতুন জানালা আটকে দেয়
+  let copy = null;
+  try { copy = navigator.clipboard.writeText(text); } catch (e) {}
+  window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
+  let copied = false;
+  try { if (copy) { await copy; copied = true; } } catch (e) {}
+  toast(copied ? 'WhatsApp খুলছে — লেখাটা কপিও করা আছে' : 'WhatsApp খুলছে');
 }
 function bqRow(x) {
   const hot = x.late || x.due || x.priority === 'Must';
@@ -2906,7 +2957,7 @@ function fillMore() {
       (AUTH ? '<button class="btn ghost sm" data-act="logout">লগআউট</button>' : '') + '</div></div>' +
     '<div class="panel"><a class="link" href="' + esc(S.boot.sheetUrl) + '" target="_blank" rel="noopener">' +
       ic('sheet') + '<span>Google Sheet খুলুন (ব্যাকএন্ড)</span>' + ic('ext', 16) + '</a></div>' +
-    '<div class="foot">Smart To-Do · v9.13</div>';
+    '<div class="foot">Smart To-Do · v9.14</div>';
 }
 
 /* ---------- নিরাপত্তা (শুধু মালিক দেখেন) ----------
@@ -3163,6 +3214,7 @@ function drawRv() {
     '<div class="rv-bar">' +
       '<button class="rv-ib" data-act="rv-close" aria-label="বন্ধ">' + ic('x', 20) + '</button>' +
       '<div class="t">' + esc(t[0]) + '<small>' + (d ? esc(repRange(d)) : 'লোড হচ্ছে…') + '</small></div>' +
+      (RV.kind === 'boss' ? '<button class="rv-ib" data-act="rv-wa" title="WhatsApp-এ পাঠান"' + (d ? '' : ' disabled') + '>' + ic('wa', 18) + '</button>' : '') +
       (navigator.share ? '<button class="rv-ib" data-act="rv-share" title="শেয়ার"' + (d ? '' : ' disabled') + '>' + ic('share', 18) + '</button>' : '') +
       '<button class="rv-ib" data-act="rv-print" title="প্রিন্ট"' + (d ? '' : ' disabled') + '>' + ic('printer', 18) + '</button>' +
       '<button class="rv-ib pri" data-act="rv-pdf"' + (d ? '' : ' disabled') + '>' + ic('download', 17) + ' PDF</button>' +
@@ -3704,6 +3756,8 @@ document.addEventListener('click', function (e) {
     case 'rv-step':  stepReport(Number(v)); break;
     case 'rv-pdf':   rvPdf(el, false); break;
     case 'rv-share': rvPdf(el, true); break;
+    case 'rv-wa':    sendBossWa(RV.data); break;
+    case 'boss-wa':  sendBossWa(S.bossQ); break;
     case 'rv-print': rvPrint(); break;
   }
 });
