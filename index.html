@@ -2829,7 +2829,11 @@ function bossPanel() {
     '<div class="fld"><div class="lbl">রিপোর্ট যাঁর টেবিলে যাবে</div>' +
       '<div class="prow" style="margin:0"><input id="bossName" class="inp" maxlength="80" autocomplete="off" placeholder="যেমন: Managing Director" value="' + esc(S.boot.bossName || '') + '">' +
       '<button class="btn ghost" data-act="boss-name-save">সেভ</button></div>' +
-      '<div class="hint">রিপোর্টের "প্রাপক" লাইনে বসে। আগের দিনের রিপোর্ট: নিচের তারিখ বদলে এই বোতাম।</div></div></div>';
+      '<div class="hint">রিপোর্টের "প্রাপক" লাইনে বসে। আগের দিনের রিপোর্ট: নিচের তারিখ বদলে এই বোতাম।</div></div>' +
+    '<div class="fld"><div class="lbl">বসের WhatsApp নম্বর</div>' +
+      '<div class="prow" style="margin:0"><input id="bossWa" class="inp" type="tel" inputmode="tel" maxlength="20" autocomplete="off" placeholder="যেমন: 01712345678" value="' + esc(waLocal(S.boot.bossWa)) + '">' +
+      '<button class="btn ghost" data-act="boss-wa-save">সেভ</button></div>' +
+      '<div class="hint">থাকলে WhatsApp বোতাম সরাসরি বসের চ্যাট খোলে; ফাঁকা রাখলে কাকে পাঠাবেন বাছাই করবেন।</div></div></div>';
 }
 /* ---- WhatsApp-এর জন্য একই প্রতিবেদন লেখা আকারে (*মোটা*, _বাঁকা_ — WhatsApp-এর নিজের নিয়ম)।
  *      ক্রম নম্বর কাগজের মতোই, তাই বস "২ — অনুমোদিত" লিখে উত্তর দিলে অ্যাপে মিলিয়ে বসানো সহজ ---- */
@@ -2867,17 +2871,20 @@ function bossWaText(d) {
   L.push('— ' + OWNER_NAME);
   return L.join('\n');
 }
-// লেখাটা কপি করে WhatsApp খোলে — কাকে পাঠাবেন সেখানে বাছাই। খোলা না গেলে কপি করা লেখা বসিয়ে দিলেই হয়
+// লেখাটা কপি করে WhatsApp খোলে — বসের নম্বর থাকলে সরাসরি তাঁর চ্যাট, নইলে কাকে পাঠাবেন সেখানে বাছাই।
+// খোলা না গেলে কপি করা লেখা বসিয়ে দিলেই হয়
 async function sendBossWa(d) {
   if (!d) return;
   const text = bossWaText(d);
   // কপি শুরু করে সঙ্গে সঙ্গে খোলা — আগে await করলে কিছু ব্রাউজার নতুন জানালা আটকে দেয়
   let copy = null;
   try { copy = navigator.clipboard.writeText(text); } catch (e) {}
-  window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
+  const num = (S.boot && S.boot.bossWa) || '';
+  window.open('https://wa.me/' + num + '?text=' + encodeURIComponent(text), '_blank');
   let copied = false;
   try { if (copy) { await copy; copied = true; } } catch (e) {}
-  toast(copied ? 'WhatsApp খুলছে — লেখাটা কপিও করা আছে' : 'WhatsApp খুলছে');
+  const who = num ? 'বসের WhatsApp খুলছে' : 'WhatsApp খুলছে';
+  toast(copied ? who + ' — লেখাটা কপিও করা আছে' : who);
 }
 function bqRow(x) {
   const hot = x.late || x.due || x.priority === 'Must';
@@ -2889,6 +2896,17 @@ function bqRow(x) {
       (x.by ? '<span class="tag" style="--t:' + (x.late ? 'var(--danger)' : x.due ? 'var(--warn)' : '#64748B') + '">' +
         (x.late ? 'সময় পেরিয়েছে' : x.due ? 'আজই দরকার' : esc(shortDate(x.by)) + '-এর মধ্যে') + '</span>' : '') +
     '</span></span><span class="go">উত্তর' + ic('chevR', 14) + '</span></button>';
+}
+// "8801529999999" → "01529999999" (দেখানোর জন্য)
+function waLocal(n) { n = String(n || ''); return /^8801\d{9}$/.test(n) ? n.slice(2) : n; }
+async function saveBossWa(btn) {
+  btn.classList.add('loading');
+  try {
+    S.boot.bossWa = await api('apiSetBossWa', $('#bossWa').value.trim());
+    $('#bossWa').value = waLocal(S.boot.bossWa);
+    toast('সেভ হয়েছে ✅');
+  } catch (e) { toast(e.message); }
+  btn.classList.remove('loading');
 }
 async function saveBossName(btn) {
   btn.classList.add('loading');
@@ -2957,7 +2975,7 @@ function fillMore() {
       (AUTH ? '<button class="btn ghost sm" data-act="logout">লগআউট</button>' : '') + '</div></div>' +
     '<div class="panel"><a class="link" href="' + esc(S.boot.sheetUrl) + '" target="_blank" rel="noopener">' +
       ic('sheet') + '<span>Google Sheet খুলুন (ব্যাকএন্ড)</span>' + ic('ext', 16) + '</a></div>' +
-    '<div class="foot">Smart To-Do · v9.14</div>';
+    '<div class="foot">Smart To-Do · v9.15</div>';
 }
 
 /* ---------- নিরাপত্তা (শুধু মালিক দেখেন) ----------
@@ -3706,6 +3724,7 @@ document.addEventListener('click', function (e) {
     case 'boss-opt':  readReplyDraft(); S.replyDraft.opt = Number(v); drawBossReply(); break;
     case 'boss-save': saveBossReply(el); break;
     case 'boss-name-save': saveBossName(el); break;
+    case 'boss-wa-save': saveBossWa(el); break;
     case 'f-copy':
       readForm();
       F.ref = null; F.status = 'To Do'; F.source = 'app'; F.rollover = 0; F.onCalendar = false;
