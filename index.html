@@ -56,7 +56,7 @@ function callServer(fn, args) {
 <script src="ntf.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Noto+Serif+Bengali:wght@400;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   /* ============ টোকেন ============ */
   :root {
@@ -876,6 +876,8 @@ function callServer(fn, args) {
   @media (prefers-color-scheme: dark) { .bopt { color: color-mix(in srgb, var(--c) 60%, white); } }
   .bopt:active { transform: scale(.97); }
   .bopt:disabled { opacity: .5; }
+  .bopt.on { background: var(--c); color: #fff; box-shadow: 0 6px 16px -8px var(--c); }
+  .bopt-ask span b { font-weight: 800; }
 
   /* বসের রিপোর্ট — অফিসের মেমোর ধাঁচ; বস কাগজেই টিক দিয়ে সিদ্ধান্ত লেখেন */
   .rp-memo { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid #999; margin-bottom: 10px; }
@@ -890,15 +892,33 @@ function callServer(fn, args) {
   .rp .rq i { font-style: normal; color: #444; }
   .rp .sm { display: block; font-size: 10px; color: #555; margin-top: 2px; }
   .rp .sm.late { color: #000; font-weight: bold; }
-  .rp td.dec { font-size: 10.5px; line-height: 1.95; white-space: nowrap; }
+  .rp td.dec { font-size: 10.5px; line-height: 1.95; }
   .rp .bx { display: inline-block; width: 10px; height: 10px; border: 1px solid #000; vertical-align: -1px; margin-right: 5px; position: relative; }
   .rp .rmk { border-bottom: 1px dotted #777; height: 18px; }
+  /* পুরো বাংলা পাতা — বাংলা অক্ষরে Noto Serif Bengali (দাপ্তরিক চিঠির ধাঁচ), ইংরেজি নামে Times।
+     বাংলায় অক্ষরের মাঝে ফাঁক (letter-spacing) যুক্তাক্ষর ভেঙে দেয় — তাই বন্ধ */
+  .rp.bn { font-family: 'Times New Roman', Times, 'Noto Serif Bengali', 'Hind Siliguri', serif; line-height: 1.6; }
+  .rp.bn .rp-title { letter-spacing: 0; font-size: 15px; }
+  .rp.bn .rp-h, .rp.bn .rp-stats span, .rp.bn .rp-memo span, .rp.bn .ty { letter-spacing: 0; text-transform: none; }
+  .rp.bn .rp-h { font-size: 13.5px; }
+  .rp.bn .rp-stats span { font-size: 10.5px; }
+  .rp.bn .rp-memo span { font-size: 11px; width: 44px; padding-top: 0; }
+  .rp.bn .ty { font-size: 9.5px; }
+  .rp.bn .urg { letter-spacing: 0; font-size: 9px; }
+  .rp .ck { white-space: nowrap; }
+  .rp .blank { display: inline-block; width: 58px; border-bottom: 1px dotted #555; margin-left: 3px; height: 1em; vertical-align: -2px; }
+  .rp .pm { font-size: 9.5px; color: #333; margin-top: 2px; white-space: nowrap; }
+  .rp .pm .bx { width: 8px; height: 8px; margin: 0 2px 0 4px; }
+  .rp .rq .op { display: block; padding-left: 10px; }
+  .rp.bn .rmk { font-size: 9.5px; color: #555; height: auto; padding-top: 4px; line-height: 2.2; }
   .rp tr.hot td:first-child { box-shadow: inset 3px 0 0 #000; font-weight: bold; }
   @media (max-width: 520px) {
     .rp-memo { grid-template-columns: 1fr; }
     .rp-memo div:nth-child(odd) { border-right: 0; }
-    .rp td.dec { white-space: normal; font-size: 9.5px; line-height: 1.6; }
-    .rp.fixed td.dec { white-space: nowrap; font-size: 10.5px; line-height: 1.95; }
+    .rp td.dec { font-size: 9.5px; line-height: 1.6; }
+    .rp .ck { white-space: normal; }
+    .rp.fixed td.dec { font-size: 10.5px; line-height: 1.95; }
+    .rp.fixed .ck { white-space: nowrap; }
     /* PDF ফোনেও A4-এর মাপে (794px) আঁকা হয় — ছোট পর্দার নিয়ম সেখানে খাটবে না */
     .rp.fixed { font-size: 12.5px; }
     .rp.fixed .rp-head { padding: 0 64px; min-height: 64px; }
@@ -1273,25 +1293,59 @@ function normSta(s) {
 function staLabel(s) { return LBL_LANG === 'bn' ? (STA_BN[s] || s) : s; }
 
 /* বসের কাছে — যে কাজ বসের অনুমোদন/সম্মতি/সিদ্ধান্ত ছাড়া এগোয় না (সার্ভারের CONFIG.BOSS_TYPES / BOSS_REPLIES)।
- * ক্যাটাগরি নয়, আলাদা চিহ্ন — পেমেন্টের কাজে অনুমোদন লাগলেও সেটা Payment-ই থাকে। রিপোর্টে সবসময় English। */
+ * ক্যাটাগরি নয়, আলাদা চিহ্ন — পেমেন্টের কাজে অনুমোদন লাগলেও সেটা Payment-ই থাকে। রিপোর্ট পুরো বাংলায়। */
 const BOSS_C = '#BE185D';
-const BOSS_T = {   // [বাংলা, English, ব্যাখ্যা, কাগজে বসের টিকের ঘর]
-  Approval:    ['অনুমোদন', 'Approval', 'কাজ, খরচ বা প্রস্তাবের অনুমোদন', ['Approved', 'Not approved', 'Discuss']],
-  Permission:  ['অনুমতি / সম্মতি', 'Permission', 'এগোনোর আগে বসের সম্মতি দরকার', ['Permitted', 'Not permitted', 'Discuss']],
-  Decision:    ['সিদ্ধান্ত', 'Decision', 'কয়েকটা পথের একটা বেছে দিতে হবে', ['Decided (see remarks)', 'Discuss']],
-  Signature:   ['স্বাক্ষর', 'Signature', 'কাগজে বসের সই লাগবে', ['Signed', 'Not signed', 'Discuss']],
-  Fund:        ['অর্থ ছাড়', 'Fund Release', 'টাকা ছাড় বা পেমেন্টের অনুমোদন', ['Approved', 'Not approved', 'Discuss']],
-  Information: ['তথ্য / আপডেট', 'Information', 'বসের কাছ থেকে তথ্য বা আপডেট দরকার', ['Information given', 'Discuss']],
-  Discussion:  ['আলোচনা', 'Discussion', 'বসের সাথে বসে ঠিক করতে হবে', ['Discussed', 'Later']]
+// [বাংলা, English, ব্যাখ্যা, কাগজে বসের টিকের ঘর — "…" = হাতে লেখার ফাঁকা জায়গা]
+const BOSS_T = {
+  Approval:    ['অনুমোদন', 'Approval', 'কাজ, খরচ বা প্রস্তাবের অনুমোদন',
+                ['অনুমোদিত', 'শর্তসাপেক্ষে অনুমোদিত', 'অনুমোদিত নয়', 'আলোচনা প্রয়োজন']],
+  Permission:  ['অনুমতি / সম্মতি', 'Permission', 'এগোনোর আগে বসের সম্মতি দরকার',
+                ['অনুমতি দেওয়া হলো', 'শর্তসাপেক্ষে অনুমতি', 'অনুমতি দেওয়া হলো না', 'আলোচনা প্রয়োজন']],
+  Decision:    ['সিদ্ধান্ত', 'Decision', 'কয়েকটা পথের একটা বেছে দিতে হবে — বিকল্পগুলো লিখে দিন',
+                ['প্রস্তাবমতো', 'অন্য সিদ্ধান্ত (মন্তব্যে)', 'আলোচনা প্রয়োজন']],
+  Signature:   ['স্বাক্ষর', 'Signature', 'কাগজে বসের সই লাগবে',
+                ['স্বাক্ষর করা হলো', 'সংশোধন করে আনুন', 'স্বাক্ষর হবে না']],
+  Fund:        ['অর্থ ছাড়', 'Fund Release', 'টাকা ছাড় বা পেমেন্টের অনুমোদন — অঙ্কটা লিখে দিন',
+                ['পুরো অর্থ ছাড়', 'আংশিক ছাড়: ৳ …', 'পরে ছাড়, তারিখ: …', 'ছাড় হবে না']],
+  Information: ['তথ্য / আপডেট', 'Information', 'বসের কাছ থেকে তথ্য বা আপডেট দরকার',
+                ['তথ্য দেওয়া হলো (মন্তব্যে)', 'পরে জানাবেন, তারিখ: …', 'আলোচনা প্রয়োজন']],
+  Discussion:  ['আলোচনা', 'Discussion', 'বসের সাথে বসে ঠিক করতে হবে',
+                ['আলোচনা হয়েছে', 'বৈঠকের সময়: …', 'প্রয়োজন নেই']]
 };
-const BOSS_R = {   // [বাংলা, English, রং, আইকন]
-  Approved: ['অনুমোদিত', 'Approved', '#059669', 'check'],
-  Rejected: ['নাকচ', 'Not Approved', '#E11D48', 'x'],
-  Revise:   ['সংশোধন চাই', 'Revise & Resubmit', '#D97706', 'undo'],
-  Noted:    ['নিষ্পত্তি হয়েছে', 'Resolved', '#2563EB', 'checksq']
+// অ্যাপে বসের উত্তর লেখার বোতাম — ধরন অনুযায়ী (একই কোডের নাম ধরনভেদে আলাদা)
+const BOSS_RO = {
+  Approval:    [['Approved', 'অনুমোদিত'], ['Conditional', 'শর্তসাপেক্ষে অনুমোদিত'], ['Rejected', 'অনুমোদিত নয়'], ['Revise', 'সংশোধন করে আবার দিন']],
+  Permission:  [['Approved', 'অনুমতি দেওয়া হলো'], ['Conditional', 'শর্তসাপেক্ষে অনুমতি'], ['Rejected', 'অনুমতি দেওয়া হলো না'], ['Revise', 'আরও তথ্য চাই']],
+  Decision:    [['Approved', 'সিদ্ধান্ত হয়েছে'], ['Deferred', 'পরে জানাবেন'], ['Revise', 'আরও তথ্য চাই']],
+  Signature:   [['Approved', 'স্বাক্ষর হয়েছে'], ['Revise', 'সংশোধন করে আনুন'], ['Rejected', 'স্বাক্ষর হবে না']],
+  Fund:        [['Approved', 'পুরো অর্থ ছাড়'], ['Partial', 'আংশিক ছাড়'], ['Deferred', 'পরে ছাড়'], ['Rejected', 'ছাড় হবে না']],
+  Information: [['Noted', 'তথ্য পাওয়া গেছে'], ['Deferred', 'পরে জানাবেন']],
+  Discussion:  [['Noted', 'আলোচনা হয়েছে'], ['Deferred', 'বৈঠকের সময় ঠিক হলো'], ['Rejected', 'প্রয়োজন নেই']]
 };
+const BOSS_RC = {   // [রং, আইকন]
+  Approved: ['#059669', 'check'], Conditional: ['#0D9488', 'check'], Partial: ['#0891B2', 'check'], Deferred: ['#7C3AED', 'clock'],
+  Rejected: ['#E11D48', 'x'], Revise: ['#D97706', 'undo'], Noted: ['#2563EB', 'checksq']
+};
+const PAY_MODE = { Cash: 'নগদ', Cheque: 'চেক', Bank: 'ব্যাংক' };
+const ABC_BN = ['ক', 'খ', 'গ', 'ঘ'];
 function bossT(t) { const x = BOSS_T[t]; return x ? x[LBL_LANG === 'bn' ? 0 : 1] : t; }
-function bossR(r) { const x = BOSS_R[r]; return x ? x[LBL_LANG === 'bn' ? 0 : 1] : r; }
+function bossRL(t, r) {
+  const hit = (BOSS_RO[t] || []).filter(function (o) { return o[0] === r; })[0];
+  return hit ? hit[1] : ({ Approved: 'অনুমোদিত', Conditional: 'শর্তসাপেক্ষে', Partial: 'আংশিক', Deferred: 'পরে',
+                           Rejected: 'নাকচ', Revise: 'সংশোধন', Noted: 'নিষ্পত্তি' })[r] || r;
+}
+function taka(n) { return '৳' + Number(n).toLocaleString('bn-BD'); }
+// উত্তর এক লাইনে — "আংশিক ছাড় — ৳২,০০,০০০ · চেক"   (b: Boss ঘর বা রিপোর্টের সারি — t/type, r/reply)
+function bossRText(b) {
+  const t = b.t || b.type, r = b.r || b.reply;
+  const bits = [];
+  if (b.ro) bits.push(b.ro);
+  if (b.ra) bits.push(taka(b.ra));
+  if (b.rd) bits.push(longDateShort(b.rd));
+  if (b.rm) bits.push(PAY_MODE[b.rm] || b.rm);
+  return bossRL(t, r) + (bits.length ? ' — ' + bits.join(' · ') : '');
+}
+function longDateShort(k) { return fmt(k, { day: 'numeric', month: 'long' }); }
 const SRC = { 'app': 'অ্যাপ', 'quick-add': 'Quick add', 'entry': 'Entry শিট', 'google-tasks': 'Google Tasks', '': 'শিট' };
 
 const TOOLS = {
@@ -1849,8 +1903,8 @@ function card(i, opts) {
       (free ? ' ▾' : '') + '</' + (free ? 'button' : 'span') + '>';
   }
   if (i.boss && !i.done) {
-    const r = BOSS_R[i.boss.r];
-    tags += r ? '<span class="tag" style="--t:' + r[2] + '">' + ic(r[3], 11) + esc(bossR(i.boss.r)) + '</span>'
+    const r = BOSS_RC[i.boss.r];
+    tags += r ? '<span class="tag" style="--t:' + r[0] + '">' + ic(r[1], 11) + esc(bossRL(i.boss.t, i.boss.r)) + '</span>'
               : '<span class="tag" style="--t:' + BOSS_C + '">' + ic('pen', 11) + (LBL_LANG === 'bn' ? 'বস: ' : 'Boss: ') + esc(bossT(i.boss.t)) + '</span>';
   }
   if (i.rollover > 0 && !i.done) {
@@ -1904,7 +1958,7 @@ function refOf(i) { return { row: i.row, task: i.task, date: i.date }; }
 
 function openEditor(item, preset) {
   if (item) {
-    F = Object.assign({}, item, { ref: refOf(item), boss: item.boss ? Object.assign({}, item.boss) : null });
+    F = Object.assign({}, item, { ref: refOf(item), boss: item.boss ? bossForForm(item.boss) : null });
   } else {
     F = Object.assign({
       ref: null, task: '', category: 'Other', priority: 'Should', status: 'To Do',
@@ -1983,10 +2037,23 @@ function readForm() {
   F.task = $('#fTask').value; F.date = $('#fDate').value || todayKey();
   F.start = $('#fStart').value; F.end = $('#fEnd').value;
   F.note = $('#fNote').value; F.guest = $('#fGuest').value;
-  if (F.boss && $('#fBossAsk')) { F.boss.ask = $('#fBossAsk').value; F.boss.by = $('#fBossBy').value; }
+  if (F.boss && $('#fBossAsk')) {
+    F.boss.ask = $('#fBossAsk').value; F.boss.by = $('#fBossBy').value;
+    if ($('#fBossAmt')) F.boss.amt = $('#fBossAmt').value;
+    if ($('#fBossOpts')) F.boss.opts = $('#fBossOpts').value;
+  }
 }
 
-/* ফর্মের "বসের কাছে" অংশ — চালু করলে রিপোর্ট ট্যাবের "বসের টেবিলে" আর বসের রিপোর্টে যায় */
+// সার্ভারের Boss ঘর → ফর্মে (অঙ্ক লেখা হিসেবে, বিকল্প প্রতি লাইনে একটা)
+function bossForForm(b) {
+  return Object.assign({}, b, { amt: b.amt ? String(b.amt) : '', opts: (b.opts || []).join('\n') });
+}
+function optList(v) {
+  return (Array.isArray(v) ? v : String(v || '').split('\n')).map(function (x) { return x.trim(); }).filter(String);
+}
+
+/* ফর্মের "বসের কাছে" অংশ — চালু করলে রিপোর্ট ট্যাবের "বসের টেবিলে" আর বসের রিপোর্টে যায়।
+ * অর্থ ছাড়ে চাওয়া অঙ্ক, সিদ্ধান্তে বিকল্পগুলো — রিপোর্টে বস সেগুলো দেখেই টিক দেন। */
 function bossFields() {
   const b = F.boss;
   let h = '<div class="fld"><div class="swrow"><div><div class="lbl" style="margin:0">বসের কাছে</div>' +
@@ -1997,17 +2064,23 @@ function bossFields() {
     '<div class="fld"><div class="lbl">কী দরকার</div><div class="chips">' +
       (S.boot.bossTypes || Object.keys(BOSS_T)).map(function (t) {
         return '<button class="chip' + (b.t === t ? ' on' : '') + '" style="--c:' + BOSS_C + '" data-act="f-boss-t" data-v="' + esc(t) + '">' + esc(bossT(t)) + '</button>';
-      }).join('') + '</div><div class="hint" id="bHint">' + esc((BOSS_T[b.t] || [])[2] || '') + '</div></div>' +
+      }).join('') + '</div><div class="hint">' + esc((BOSS_T[b.t] || [])[2] || '') + '</div></div>' +
     '<div class="fld"><div class="lbl">বসের কাছে ঠিক কী চান</div>' +
       '<textarea id="fBossAsk" class="inp" rows="2" maxlength="300" placeholder="যেমন: রকমারির চুক্তির খসড়া অনুমোদন — ১২% কমিশনে">' + esc(b.ask || '') + '</textarea>' +
-      '<div class="hint">রিপোর্টে "Request" হিসেবে এটাই যায় — এক লাইনে পরিষ্কার করে লিখুন।</div></div>' +
+      '<div class="hint">রিপোর্টে "আবেদন" হিসেবে এটাই যায় — এক লাইনে পরিষ্কার করে লিখুন।</div></div>' +
+    (b.t === 'Fund' ? '<div class="fld"><div class="lbl">চাওয়া অর্থ (৳)</div>' +
+      '<input id="fBossAmt" class="inp" inputmode="decimal" autocomplete="off" placeholder="যেমন: ৩,৪৫,০০০" value="' + esc(b.amt || '') + '">' +
+      '<div class="hint">বস পুরো, আংশিক বা পরে ছাড় — যেটাই দিন, রিপোর্টে এই অঙ্কের পাশেই টিক দেবেন।</div></div>' : '') +
+    (b.t === 'Decision' ? '<div class="fld"><div class="lbl">বিকল্পগুলো <span class="hint">(প্রতি লাইনে একটা, সর্বোচ্চ ৪টা)</span></div>' +
+      '<textarea id="fBossOpts" class="inp" rows="3" placeholder="২টা স্টল — ৳৮০,০০০&#10;৩টা স্টল — ৳১,২০,০০০">' + esc(b.opts || '') + '</textarea>' +
+      '<div class="hint">রিপোর্টে ক, খ, গ… হয়ে আসে — বস একটায় টিক দেন।</div></div>' : '') +
     '<div class="fld"><div class="lbl">কবের মধ্যে দরকার <span class="hint">(ঐচ্ছিক)</span></div>' +
       '<div class="tin"><input type="date" id="fBossBy" class="inp" value="' + esc(b.by || '') + '">' +
       '<button class="clr" data-act="f-clear" data-v="fBossBy" aria-label="মুছুন">' + ic('x', 13) + '</button></div></div>';
   if (F.ref && b.since) {
-    const r = BOSS_R[b.r];
+    const r = BOSS_RC[b.r];
     h += '<div class="boss-st">' + (r
-      ? '<span class="tag" style="--t:' + r[2] + '">' + ic(r[3], 11) + esc(r[0]) + '</span><span>' + esc(shortDate(b.on)) + (b.rn ? ' — ' + esc(b.rn) : '') + '</span>' +
+      ? '<span class="tag" style="--t:' + r[0] + '">' + ic(r[1], 11) + esc(bossRText(b)) + '</span><span>' + esc(shortDate(b.on)) + (b.rn ? ' — ' + esc(b.rn) : '') + '</span>' +
         '<button class="btn ghost sm" data-act="f-boss-again">আবার পাঠান</button>'
       : '<span>' + esc(shortDate(b.since)) + ' থেকে বসের কাছে</span><button class="btn ghost sm" data-act="f-boss-reply">বসের উত্তর লিখুন</button>') + '</div>';
   }
@@ -2015,33 +2088,94 @@ function bossFields() {
 }
 
 /* ---------- বসের উত্তর ----------
- * বস কাগজে/মুখে সিদ্ধান্ত দিলে এখানে লেখা — কাজটা অপেক্ষার তালিকা থেকে সরে রিপোর্টের "Decisions Received"-এ যায় */
-function openBossReply(x) {
-  S.replyFor = x;
-  const b = x.boss || {};
-  $('#sheet').innerHTML = '<div class="grab"></div><div class="sh-head"><h2>বসের উত্তর</h2>' +
-    '<button class="x" data-act="close" aria-label="বন্ধ">' + ic('x') + '</button></div>' +
-    '<div class="bopt-ask"><b>' + esc(x.task) + '</b>' + (b.ask ? '<span>' + esc((BOSS_T[b.t] || [b.t])[0]) + ' — ' + esc(b.ask) + '</span>' : '') + '</div>' +
-    '<div class="fld"><div class="lbl">বসের মন্তব্য / শর্ত <span class="hint">(ঐচ্ছিক)</span></div>' +
-      '<textarea id="fBossNote" class="inp" rows="2" maxlength="300" placeholder="যেমন: ১০% কমিশনে রাজি হলে চূড়ান্ত করুন"></textarea></div>' +
-    '<div class="bopts">' + (S.boot.bossReplies || Object.keys(BOSS_R)).map(function (r) {
-      return '<button class="bopt" style="--c:' + BOSS_R[r][2] + '" data-act="boss-r" data-v="' + r + '">' + ic(BOSS_R[r][3], 16) + esc(BOSS_R[r][0]) + '</button>';
-    }).join('') + '</div>' +
-    '<div class="hint" style="margin-top:12px">উত্তর লিখলে কাজটা বসের অপেক্ষার তালিকা থেকে সরে রিপোর্টের "Decisions Received"-এ যায়; "অপেক্ষায়" থাকা কাজ আবার "বাকি"-তে ফেরে।</div>';
+ * বস কাগজে/মুখে সিদ্ধান্ত দিলে এখানে লেখা। ধরন অনুযায়ী বোতাম (অর্থ ছাড়: পুরো / আংশিক / পরে / না),
+ * আর যা লাগে তার ঘর — আংশিক হলে অঙ্ক, পরে হলে তারিখ, শর্তসাপেক্ষে হলে শর্ত, সিদ্ধান্তে কোন বিকল্প।
+ * সেভ করলে কাজটা অপেক্ষার তালিকা থেকে সরে রিপোর্টের "প্রাপ্ত সিদ্ধান্ত"-এ যায়। */
+function openBossReply(x) {   // x: { row, task, date, boss: { t, ask, amt, opts } }
+  S.replyFor = x; S.replyPick = null; S.replyDraft = { note: '', amt: '', date: '', opt: -1, mode: '' };
+  drawBossReply();
   openSheet();
 }
-async function sendBossReply(ref, reply, btn) {
+function readReplyDraft() {
+  const D = S.replyDraft;
+  if ($('#rNote')) D.note = $('#rNote').value;
+  if ($('#rAmt')) D.amt = $('#rAmt').value;
+  if ($('#rDate')) D.date = $('#rDate').value;
+}
+function drawBossReply() {
+  const x = S.replyFor, b = x.boss || {}, p = S.replyPick, D = S.replyDraft;
+  const opts = optList(b.opts);
+  const fund = b.t === 'Fund';
+  let extra = '';
+  if (b.t === 'Decision' && p === 'Approved' && opts.length) {
+    extra += '<div class="fld"><div class="lbl">কোন বিকল্প</div><div class="chips">' +
+      opts.map(function (o, i) {
+        return '<button class="chip' + (D.opt === i ? ' on' : '') + '" style="--c:' + BOSS_C + '" data-act="boss-opt" data-v="' + i + '">' + ABC_BN[i] + ') ' + esc(o) + '</button>';
+      }).join('') +
+      '<button class="chip' + (D.opt === -2 ? ' on' : '') + '" style="--c:' + BOSS_C + '" data-act="boss-opt" data-v="-2">অন্য সিদ্ধান্ত</button></div></div>';
+  }
+  if (p === 'Partial') extra += '<div class="fld"><div class="lbl">কত টাকা ছাড় হলো (৳)</div>' +
+    '<input id="rAmt" class="inp" inputmode="decimal" autocomplete="off" placeholder="যেমন: ২,০০,০০০" value="' + esc(D.amt) + '">' +
+    (b.amt ? '<div class="hint">চাওয়া ছিল ' + taka(b.amt) + '</div>' : '') + '</div>';
+  if (p === 'Deferred') extra += '<div class="fld"><div class="lbl">' +
+    (fund ? 'কবে ছাড় হবে' : b.t === 'Discussion' ? 'বৈঠকের তারিখ' : 'কবে জানাবেন') + '</div>' +
+    '<input type="date" id="rDate" class="inp" value="' + esc(D.date) + '"></div>';
+  if (fund && (p === 'Approved' || p === 'Partial')) extra += '<div class="fld"><div class="lbl">মাধ্যম <span class="hint">(ঐচ্ছিক)</span></div><div class="chips">' +
+    Object.keys(PAY_MODE).map(function (m) {
+      return '<button class="chip' + (D.mode === m ? ' on' : '') + '" data-act="boss-mode" data-v="' + m + '">' + PAY_MODE[m] + '</button>';
+    }).join('') + '</div></div>';
+  const needNote = p === 'Conditional' || (b.t === 'Decision' && p === 'Approved' && (!opts.length || D.opt === -2));
+  const noteLbl = p === 'Conditional' ? 'শর্ত' : needNote ? 'কী সিদ্ধান্ত হলো' : 'বসের মন্তব্য <span class="hint">(ঐচ্ছিক)</span>';
+
+  $('#sheet').innerHTML = '<div class="grab"></div><div class="sh-head"><h2>বসের উত্তর</h2>' +
+    '<button class="x" data-act="close" aria-label="বন্ধ">' + ic('x') + '</button></div>' +
+    '<div class="bopt-ask"><b>' + esc(x.task) + '</b>' +
+      (b.ask ? '<span>' + esc((BOSS_T[b.t] || [b.t])[0]) + ' — ' + esc(b.ask) + '</span>' : '') +
+      (b.amt ? '<span>চাওয়া অর্থ: <b style="display:inline">' + taka(b.amt) + '</b></span>' : '') +
+      (opts.length ? '<span>' + opts.map(function (o, i) { return ABC_BN[i] + ') ' + esc(o); }).join(' &nbsp; ') + '</span>' : '') + '</div>' +
+    '<div class="lbl" style="margin-top:14px">বসের সিদ্ধান্ত</div>' +
+    '<div class="bopts">' + (BOSS_RO[b.t] || BOSS_RO.Approval).map(function (o) {
+      const c = BOSS_RC[o[0]];
+      return '<button class="bopt' + (p === o[0] ? ' on' : '') + '" style="--c:' + c[0] + '" data-act="boss-pick" data-v="' + o[0] + '">' + ic(c[1], 16) + esc(o[1]) + '</button>';
+    }).join('') + '</div>' +
+    (p ? extra +
+      '<div class="fld"><div class="lbl">' + noteLbl + '</div>' +
+        '<textarea id="rNote" class="inp" rows="2" maxlength="300" placeholder="' + (p === 'Conditional' ? 'যেমন: ১০% কমিশনে রাজি হলে' : 'যেমন: ১০ তারিখের মধ্যে শেষ করুন') + '">' + esc(D.note) + '</textarea></div>' +
+      '<div class="ferr" id="rErr"></div>' +
+      '<div class="sh-act"><button class="btn primary grow" data-act="boss-save">সেভ করুন</button></div>'
+      : '<div class="hint" style="margin-top:12px">বস যা বলেছেন সেটা বাছুন — তারপর দরকারি ঘর আসবে। সেভ করলে কাজটা অপেক্ষার তালিকা থেকে সরে রিপোর্টের "প্রাপ্ত সিদ্ধান্ত"-এ যায়।</div>');
+}
+async function saveBossReply(btn) {
+  readReplyDraft();
+  const x = S.replyFor, b = x.boss || {}, p = S.replyPick, D = S.replyDraft;
+  const opts = optList(b.opts);
+  const err = function (m) { const e = $('#rErr'); e.textContent = m; e.classList.add('show'); };
+  const ex = { amt: p === 'Partial' ? D.amt : '', date: p === 'Deferred' ? D.date : '', mode: D.mode,
+               opt: b.t === 'Decision' && p === 'Approved' && D.opt >= 0 ? ABC_BN[D.opt] + ') ' + opts[D.opt] : '' };
+  if (p === 'Partial' && !String(D.amt).trim()) return err('কত টাকা ছাড় হলো লিখুন।');
+  if (p === 'Deferred' && !D.date) return err('তারিখটা দিন।');
+  if (p === 'Conditional' && !D.note.trim()) return err('শর্তটা লিখুন।');
+  if (b.t === 'Decision' && p === 'Approved') {
+    if (opts.length && D.opt === -1) return err('কোন বিকল্পে সিদ্ধান্ত হলো বাছুন।');
+    if ((!opts.length || D.opt === -2) && !D.note.trim()) return err('কী সিদ্ধান্ত হলো লিখুন।');
+  }
+  sendBossReply(x, p, btn, D.note, ex);
+}
+async function sendBossReply(ref, reply, btn, note, ex) {
   if (!ref) return;
-  const note = reply ? (($('#fBossNote') || {}).value || '') : '';
   btn.disabled = true; btn.classList.add('loading');
   try {
-    await api('apiBossReply', { row: ref.row, task: ref.task, date: ref.date }, reply, note);
+    await api('apiBossReply', { row: ref.row, task: ref.task, date: ref.date }, reply, reply ? note || '' : '', reply ? ex || {} : {});
     S.replyFor = null; closeSheet();
-    toast(reply ? 'বসের উত্তর লেখা হয়েছে — ' + BOSS_R[reply][0] + ' ✓' : 'আবার বসের কাছে পাঠানো হলো');
+    toast(reply ? 'বসের উত্তর লেখা হয়েছে ✓' : 'আবার বসের কাছে পাঠানো হলো');
     S.bossQ = null;
     if (S.tab === 'insights') fillInsights();
     loadList(true);
-  } catch (e) { btn.disabled = false; btn.classList.remove('loading'); toast(e.message); }
+  } catch (e) {
+    btn.disabled = false; btn.classList.remove('loading');
+    const r = $('#rErr');
+    if (r) { r.textContent = e.message; r.classList.add('show'); } else toast(e.message);
+  }
 }
 
 function pickIn(el, attrAct) {
@@ -2058,12 +2192,13 @@ async function saveTask(btn) {
   readForm();
   if (!F.task.trim()) return formError('কাজের নাম লিখুন।');
   if (F.boss && !F.boss.ask.trim()) return formError('বসের কাছে ঠিক কী চান লিখুন — রিপোর্টে এটাই যায়।');
+  if (F.boss && F.boss.t === 'Decision' && optList(F.boss.opts).length > 4) return formError('বিকল্প সর্বোচ্চ ৪টা।');
   btn.classList.add('loading'); formError('');
   try {
     const it = await api('apiSaveTask', {
       ref: F.ref, task: F.task, category: F.category, priority: F.priority, status: F.status,
       date: F.date, start: F.start, end: F.end, note: F.note, guest: F.guest,
-      boss: F.boss ? { t: F.boss.t, ask: F.boss.ask, by: F.boss.by } : null
+      boss: F.boss ? { t: F.boss.t, ask: F.boss.ask, by: F.boss.by, amt: F.boss.amt || '', opts: F.boss.t === 'Decision' ? F.boss.opts || '' : '' } : null
     });
     const wasNew = !F.ref;
     closeSheet();
@@ -2677,17 +2812,18 @@ function bossPanel() {
     Q.pending.slice(0, 8).map(bqRow).join('') +
     (Q.pending.length > 8 ? '<div class="bq-more">আরও ' + bnNum(Q.pending.length - 8) + 'টা — রিপোর্টে সব আছে</div>' : '');
   return '<div class="panel"><h3>' + ic('pen') + ' বসের টেবিলে<small>অনুমোদন · সম্মতি · সিদ্ধান্ত</small></h3>' + body +
-    '<button class="btn primary boss-open" data-act="report" data-kind="boss">' + ic('file', 16) + ' বসের রিপোর্ট — দেখুন · PDF · প্রিন্ট</button>' +
+    '<button class="btn primary boss-open" data-act="report" data-kind="boss">' + ic('file', 16) + ' অনুমোদন ও সিদ্ধান্ত প্রতিবেদন</button>' +
     '<div class="fld"><div class="lbl">রিপোর্ট যাঁর টেবিলে যাবে</div>' +
       '<div class="prow" style="margin:0"><input id="bossName" class="inp" maxlength="80" autocomplete="off" placeholder="যেমন: Managing Director" value="' + esc(S.boot.bossName || '') + '">' +
       '<button class="btn ghost" data-act="boss-name-save">সেভ</button></div>' +
-      '<div class="hint">রিপোর্টের "To:" লাইনে বসে। আগের দিনের রিপোর্ট: নিচের তারিখ বদলে এই বোতাম।</div></div></div>';
+      '<div class="hint">রিপোর্টের "প্রাপক" লাইনে বসে। আগের দিনের রিপোর্ট: নিচের তারিখ বদলে এই বোতাম।</div></div></div>';
 }
 function bqRow(x) {
   const hot = x.late || x.due || x.priority === 'Must';
   return '<button class="bq' + (hot ? ' hot' : '') + '" data-act="bq-open" data-row="' + x.row + '"><span class="bar"></span><span class="bx">' +
     '<b>' + esc(x.task) + '</b>' + (x.ask ? '<small>' + esc(x.ask) + '</small>' : '') +
     '<span class="tags"><span class="tag" style="--t:' + BOSS_C + '">' + esc(bossT(x.type)) + '</span>' +
+      (x.amt ? '<span class="tag plain">' + taka(x.amt) + '</span>' : '') +
       '<span class="tag plain">' + ic('clock', 11) + (x.days ? bnNum(x.days) + ' দিন ধরে' : 'আজ থেকে') + '</span>' +
       (x.by ? '<span class="tag" style="--t:' + (x.late ? 'var(--danger)' : x.due ? 'var(--warn)' : '#64748B') + '">' +
         (x.late ? 'সময় পেরিয়েছে' : x.due ? 'আজই দরকার' : esc(shortDate(x.by)) + '-এর মধ্যে') + '</span>' : '') +
@@ -2760,7 +2896,7 @@ function fillMore() {
       (AUTH ? '<button class="btn ghost sm" data-act="logout">লগআউট</button>' : '') + '</div></div>' +
     '<div class="panel"><a class="link" href="' + esc(S.boot.sheetUrl) + '" target="_blank" rel="noopener">' +
       ic('sheet') + '<span>Google Sheet খুলুন (ব্যাকএন্ড)</span>' + ic('ext', 16) + '</a></div>' +
-    '<div class="foot">Smart To-Do · v9.8</div>';
+    '<div class="foot">Smart To-Do · v9.9</div>';
 }
 
 /* ---------- নিরাপত্তা (শুধু মালিক দেখেন) ----------
@@ -2928,7 +3064,7 @@ const REPORTS = {
   eod:     ['End of Day Report', 'বাকি কাজ, সংঘর্ষ, পরের দিন', 'mail', '#D97706'],
   weekly:  ['Weekly Review', 'শেষ ৭ দিনের হিসাব', 'chart', '#059669'],
   monthly: ['Monthly Review', 'পুরো মাসের হিসাব', 'calendar', '#DB2777'],
-  boss:    ['Approval & Decision Brief', 'বসের অনুমোদন / সিদ্ধান্ত', 'pen', BOSS_C]
+  boss:    ['অনুমোদন ও সিদ্ধান্ত প্রতিবেদন', 'বসের অনুমোদন / সিদ্ধান্ত', 'pen', BOSS_C, 'Approval-Decision-Report']
 };
 let RV = null;   // { kind, date, data }
 
@@ -2966,10 +3102,11 @@ function repBtn(kind) {
 
 function enDate(k, o) { return k2d(k).toLocaleDateString('en-GB', Object.assign({ timeZone: 'UTC', day: '2-digit', month: 'short', year: 'numeric' }, o)); }
 function repRange(d) {
+  if (d.kind === 'boss') return longDate(d.date);
   if (d.kind === 'weekly' || d.kind === 'monthly') return enDate(d.from) + ' – ' + enDate(d.to);
   return enDate(d.date, { weekday: 'long' });
 }
-function repFile(d) { return REPORTS[d.kind][0].replace(/[^A-Za-z0-9]+/g, '-') + '_' + (d.from ? d.from + '_to_' + d.to : d.date) + '.pdf'; }
+function repFile(d) { return (REPORTS[d.kind][4] || REPORTS[d.kind][0]).replace(/[^A-Za-z0-9]+/g, '-') + '_' + (d.from ? d.from + '_to_' + d.to : d.date) + '.pdf'; }
 
 function openReport(kind, dateKey) {
   if (!REPORTS[kind]) return;
@@ -3023,7 +3160,8 @@ function drawRv() {
     '<div class="rv-nav">' +
       '<button class="rv-ib" data-act="rv-step" data-v="-1" aria-label="আগের">' + ic('chevL', 18) + '</button>' +
       '<span>' + esc(RV.kind === 'monthly' ? k2d(RV.date).toLocaleDateString('en-GB', { timeZone: 'UTC', month: 'long', year: 'numeric' })
-                : RV.kind === 'weekly' ? 'Week ending ' + enDate(RV.date) : enDate(RV.date, { weekday: 'short' })) + '</span>' +
+                : RV.kind === 'weekly' ? 'Week ending ' + enDate(RV.date)
+                : RV.kind === 'boss' ? fmt(RV.date, { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' }) : enDate(RV.date, { weekday: 'short' })) + '</span>' +
       '<button class="rv-ib" data-act="rv-step" data-v="1" aria-label="পরের"' + (atEnd ? ' disabled' : '') + '>' + ic('chevR', 18) + '</button>' +
     '</div>' +
     '<div class="rv-body" id="rvBody">' + (d ? repPage(d) :
@@ -3086,64 +3224,77 @@ function repPage(d) {
     '<div class="rp-foot">Generated ' + esc(d.generated) + ' · This is a system generated document of ' + esc(ORG_NAME) + '</div>' +
   '</div>';
 }
-/* ---- বসের রিপোর্ট: মেমো (To/From/Date/Ref/Subject) → অপেক্ষার তালিকা, প্রতিটার পাশে বসের টিকের ঘর
- *      আর মন্তব্যের লাইন → সেদিন আসা সিদ্ধান্ত → সই ---- */
-function bossEn(t) { return (BOSS_T[t] || [0, t])[1]; }
+/* ---- বসের রিপোর্ট (পুরো বাংলায়, দাপ্তরিক চিঠির ভাষা): প্রাপক/প্রেরক/তারিখ/সূত্র/বিষয় → অপেক্ষার তালিকা,
+ *      প্রতিটার পাশে ধরন অনুযায়ী বসের টিকের ঘর (অর্থ ছাড়ে পুরো/আংশিক ৳…/পরে/না + মাধ্যম; সিদ্ধান্তে ক, খ, গ…)
+ *      আর মন্তব্যের লাইন → সেদিনের প্রাপ্ত সিদ্ধান্ত → স্বাক্ষর ---- */
 function bossPage(d) {
-  const P = d.pending, D = d.decided, n = P.length, isToday = d.date === d.today;
+  const P = d.pending, D = d.decided, n = P.length, isToday = d.date === d.today, N = bnNum;
   const org = ORG_NAME.split(/\s+/).map(function (w) { return w.charAt(0); }).join('').toUpperCase();
-  const dm = function (k) { return enDate(k, { year: undefined }); };
-  let html = '<div class="rp">' +
+  const bd = function (k) { return fmt(k, { day: 'numeric', month: 'long', year: 'numeric' }); };
+  const ck = function (label) {
+    return '<div class="ck"><span class="bx"></span>' + label.split('…').map(esc).join('<span class="blank"></span>') + '</div>';
+  };
+  let html = '<div class="rp bn">' +
     '<div class="rp-head"><img class="rp-logo" src="' + ORG_LOGO + '" alt="">' +
       '<div class="rp-org">' + esc(ORG_NAME) + '</div>' +
-      '<div class="rp-title">Approval &amp; Decision Brief</div>' +
-      '<div class="rp-meta">For management review &nbsp;·&nbsp; ' + esc(enDate(d.date, { weekday: 'long' })) + '</div></div>' +
+      '<div class="rp-title">অনুমোদন ও সিদ্ধান্ত প্রতিবেদন</div>' +
+      '<div class="rp-meta">ব্যবস্থাপনার পর্যালোচনার জন্য &nbsp;·&nbsp; ' + esc(longDate(d.date)) + '</div></div>' +
     '<div class="rp-rule"></div>' +
     '<div class="rp-memo">' +
-      '<div><span>To</span><b>' + esc(d.bossName) + '</b></div>' +
-      '<div><span>Date</span><b>' + esc(enDate(d.date)) + '</b></div>' +
-      '<div><span>From</span><b>' + esc(OWNER_NAME) + '</b></div>' +
-      '<div><span>Ref</span><b>' + esc(org + '/ADB/' + d.date.replace(/-/g, '')) + '</b></div>' +
-      '<div class="full"><span>Subject</span><b>Matters awaiting your approval, consent or decision</b></div></div>' +
+      '<div><span>প্রাপক</span><b>' + esc(d.bossName) + '</b></div>' +
+      '<div><span>তারিখ</span><b>' + esc(bd(d.date)) + '</b></div>' +
+      '<div><span>প্রেরক</span><b>' + esc(OWNER_NAME) + '</b></div>' +
+      '<div><span>সূত্র</span><b>' + esc(org + '/অসি/' + N(d.date.replace(/-/g, '/'))) + '</b></div>' +
+      '<div class="full"><span>বিষয়</span><b>আপনার সদয় অনুমোদন, সম্মতি বা সিদ্ধান্তের অপেক্ষায় থাকা বিষয়সমূহ।</b></div></div>' +
     '<p class="rp-intro">' + (n
-      ? 'The following ' + (n > 1 ? n + ' matters require' : 'matter requires') + ' your approval, consent or decision before ' +
-        (n > 1 ? 'they' : 'it') + ' can proceed. Kindly mark your decision against each item and add remarks where needed.'
-      : 'No matter is awaiting your approval or decision as of ' + esc(enDate(d.date)) + '.') + '</p>' +
+      ? 'নিম্নবর্ণিত ' + N(n) + 'টি বিষয়ে আপনার অনুমোদন, সম্মতি বা সিদ্ধান্ত ছাড়া কাজ এগিয়ে নেওয়া সম্ভব হচ্ছে না। ' +
+        'প্রতিটি বিষয়ের পাশে আপনার সিদ্ধান্তে টিক চিহ্ন দিয়ে প্রয়োজনে মন্তব্য লিখে দেওয়ার জন্য সবিনয় অনুরোধ করছি।'
+      : (isToday ? 'আজ' : bd(d.date)) + ' পর্যন্ত আপনার অনুমোদন বা সিদ্ধান্তের অপেক্ষায় কোনো বিষয় নেই।') + '</p>' +
     '<div class="rp-stats">' +
-      '<div><b>' + n + '</b><span>Awaiting Decision</span></div><div><b>' + d.urgent + '</b><span>Urgent</span></div>' +
-      '<div><b>' + d.aged + '</b><span>Pending 3+ Days</span></div><div><b>' + D.length + '</b><span>' + (isToday ? 'Decided Today' : 'Decided') + '</span></div></div>' +
-    '<div class="rp-h">A. Awaiting Your Decision <small>(' + n + ')</small></div>';
+      '<div><b>' + N(n) + '</b><span>সিদ্ধান্তের অপেক্ষায়</span></div>' +
+      '<div><b>' + N(d.urgent) + '</b><span>জরুরি</span></div>' +
+      '<div><b>' + N(d.aged) + '</b><span>৩ দিন বা বেশি ধরে</span></div>' +
+      '<div><b>' + N(D.length) + '</b><span>' + (isToday ? 'আজকের সিদ্ধান্ত' : 'সেদিনের সিদ্ধান্ত') + '</span></div></div>' +
+    '<div class="rp-h">ক. আপনার সিদ্ধান্তের অপেক্ষায় <small>(' + N(n) + 'টি)</small></div>';
 
-  html += n ? '<table><thead><tr><th class="c" style="width:26px">#</th><th>Matter &amp; Request</th>' +
-      '<th style="width:96px">Pending</th><th style="width:124px">Your Decision</th></tr></thead><tbody>' +
+  html += n ? '<table><thead><tr><th class="c" style="width:34px">ক্রম</th><th>বিষয় ও আবেদন</th>' +
+      '<th style="width:104px">অপেক্ষার সময়</th><th style="width:158px">আপনার সিদ্ধান্ত</th></tr></thead><tbody>' +
     P.map(function (x, i) {
       const hot = x.late || x.due || x.priority === 'Must';
-      const boxes = (BOSS_T[x.type] || BOSS_T.Approval)[3];
-      return '<tr' + (hot ? ' class="hot"' : '') + '><td class="c">' + (i + 1) + '</td>' +
-        '<td><span class="ty">' + esc(bossEn(x.type)) + ' · ' + esc(x.category) + '</span><b>' + esc(x.task) + '</b>' +
-          (hot ? '<span class="urg">' + (x.late ? 'OVERDUE' : 'URGENT') + '</span>' : '') +
-          (x.ask ? '<div class="rq"><i>Request:</i> ' + esc(x.ask) + '</div>' : '') +
-          (x.note ? '<span class="sm">Note: ' + esc(x.note) + '</span>' : '') + '</td>' +
-        '<td>' + (x.since ? 'Since ' + esc(dm(x.since)) : '–') +
-          '<span class="sm">' + (x.days ? x.days + (x.days > 1 ? ' days' : ' day') : 'Raised today') + '</span>' +
-          (x.by ? '<span class="sm' + (x.late || x.due ? ' late' : '') + '">Needed by ' + esc(dm(x.by)) + '</span>' : '') + '</td>' +
-        '<td class="dec">' + boxes.map(function (b) { return '<span class="bx"></span>' + esc(b); }).join('<br>') + '<div class="rmk"></div></td></tr>';
+      const T = BOSS_T[x.type] || BOSS_T.Approval;
+      const opts = x.opts || [];
+      const boxes = x.type === 'Decision' && opts.length
+        ? opts.map(function (o, j) { return 'বিকল্প ' + ABC_BN[j]; }).concat(['অন্য সিদ্ধান্ত (মন্তব্যে)', 'আলোচনা প্রয়োজন'])
+        : T[3];
+      return '<tr' + (hot ? ' class="hot"' : '') + '><td class="c">' + N(i + 1) + '</td>' +
+        '<td><span class="ty">' + esc(T[0]) + ' · ' + esc(CAT_BN[x.category] || x.category) + '</span><b>' + esc(x.task) + '</b>' +
+          (hot ? '<span class="urg">' + (x.late ? 'সময় পেরিয়েছে' : 'জরুরি') + '</span>' : '') +
+          (x.ask ? '<div class="rq"><i>আবেদন:</i> ' + esc(x.ask) + '</div>' : '') +
+          (x.amt ? '<div class="rq"><i>চাওয়া অর্থ:</i> <b>' + taka(x.amt) + '</b></div>' : '') +
+          (opts.length ? '<div class="rq"><i>বিকল্প:</i>' + opts.map(function (o, j) { return '<span class="op">' + ABC_BN[j] + ') ' + esc(o) + '</span>'; }).join('') + '</div>' : '') +
+          (x.note ? '<span class="sm">নোট: ' + esc(x.note) + '</span>' : '') + '</td>' +
+        '<td>' + (x.since ? esc(longDateShort(x.since)) + ' থেকে' : '–') +
+          '<span class="sm">' + (x.days ? N(x.days) + ' দিন ধরে' : 'আজ উপস্থাপিত') + '</span>' +
+          (x.by ? '<span class="sm' + (x.late || x.due ? ' late' : '') + '">শেষ সময়: ' + esc(longDateShort(x.by)) + '</span>' : '') + '</td>' +
+        '<td class="dec">' + boxes.map(ck).join('') +
+          (x.type === 'Fund' ? '<div class="pm">মাধ্যম: <span class="bx"></span>নগদ <span class="bx"></span>চেক <span class="bx"></span>ব্যাংক</div>' : '') +
+          '<div class="rmk">মন্তব্য:</div></td></tr>';
     }).join('') + '</tbody></table>'
-    : '<div class="rp-none">Nothing is pending with you.</div>';
+    : '<div class="rp-none">আপনার কাছে কোনো বিষয় অপেক্ষমাণ নেই।</div>';
 
   if (D.length) {
-    html += '<div class="rp-h">B. Decisions Received <small>— recorded ' + (isToday ? 'today' : 'on ' + esc(enDate(d.date))) + ' and being acted upon</small></div>' +
-      '<table><thead><tr><th class="c" style="width:26px">#</th><th>Matter</th><th style="width:112px">Decision</th><th class="hide-s">Remarks</th></tr></thead><tbody>' +
+    html += '<div class="rp-h">খ. প্রাপ্ত সিদ্ধান্ত <small>— ' + (isToday ? 'আজ' : esc(bd(d.date))) + ' লিপিবদ্ধ; সে অনুযায়ী কাজ চলছে</small></div>' +
+      '<table><thead><tr><th class="c" style="width:34px">ক্রম</th><th>বিষয়</th><th style="width:170px">সিদ্ধান্ত</th><th class="hide-s">মন্তব্য</th></tr></thead><tbody>' +
       D.map(function (x, i) {
-        return '<tr><td class="c">' + (i + 1) + '</td><td><span class="ty">' + esc(bossEn(x.type)) + '</span>' + esc(x.task) + '</td>' +
-          '<td class="ok">' + esc((BOSS_R[x.reply] || [0, x.reply])[1]) + '</td><td class="hide-s">' + esc(x.rn || '—') + '</td></tr>';
+        return '<tr><td class="c">' + N(i + 1) + '</td><td><span class="ty">' + esc((BOSS_T[x.type] || [x.type])[0]) + '</span>' + esc(x.task) + '</td>' +
+          '<td class="ok">' + esc(bossRText(x)) + '</td><td class="hide-s">' + esc(x.rn || '—') + '</td></tr>';
       }).join('') + '</tbody></table>';
   }
 
   return html +
-    '<div class="rp-sign"><div>Submitted By<small>' + esc(OWNER_NAME) + '</small></div>' +
-      '<div>Reviewed By<small>' + esc(d.bossName) + '</small></div></div>' +
-    '<div class="rp-foot">Generated ' + esc(d.generated) + ' · This is a system generated document of ' + esc(ORG_NAME) + '</div>' +
+    '<div class="rp-sign"><div>উপস্থাপনকারী<small>' + esc(OWNER_NAME) + '</small></div>' +
+      '<div>পর্যালোচনা ও স্বাক্ষর<small>' + esc(d.bossName) + '</small></div></div>' +
+    '<div class="rp-foot">তৈরি: ' + esc(N(d.generated)) + ' · ' + esc(ORG_NAME) + '-এর সিস্টেমে তৈরি নথি</div>' +
   '</div>';
 }
 function repTasks(items, d) {
@@ -3198,7 +3349,7 @@ async function makePdf(d) {
   await loadPdfLibs();
   const host = document.createElement('div');
   host.style.cssText = 'position:fixed;left:-10000px;top:0;width:794px;background:#fff;z-index:-1';
-  host.innerHTML = repPage(d).replace('<div class="rp">', '<div class="rp fixed">');
+  host.innerHTML = repPage(d).replace('<div class="rp', '<div class="rp fixed');
   document.body.appendChild(host);
   try {
     if (document.fonts && document.fonts.ready) await document.fonts.ready;
@@ -3240,8 +3391,19 @@ async function makePdf(d) {
       g.drawImage(canvas, 0, Math.floor(s[0] * sc), canvas.width, c.height, 0, 0, c.width, c.height);
       if (i) pdf.addPage();
       pdf.addImage(c.toDataURL('image/jpeg', 0.92), 'JPEG', 0, M * k, 794 * k, h * k);
-      pdf.setFontSize(8); pdf.setTextColor(140);
-      pdf.text('Page ' + (i + 1) + ' of ' + slices.length, 794 * k / 2, (PH - 18) * k, { align: 'center' });
+      if (d.kind === 'boss') {
+        // jsPDF-এর নিজের ফন্টে বাংলা নেই — পাতা নম্বর ছোট ছবি হিসেবে বসাই
+        const pc = document.createElement('canvas'), pg = pc.getContext('2d');
+        pc.width = 400; pc.height = 36;
+        pg.fillStyle = '#fff'; pg.fillRect(0, 0, 400, 36);
+        pg.fillStyle = '#8c8c8c'; pg.font = '20px "Noto Serif Bengali", "Hind Siliguri", serif';
+        pg.textAlign = 'center'; pg.textBaseline = 'middle';
+        pg.fillText('পৃষ্ঠা ' + bnNum(i + 1) + ' / ' + bnNum(slices.length), 200, 18);
+        pdf.addImage(pc.toDataURL('image/png'), 'PNG', (794 / 2 - 100) * k, (PH - 27) * k, 200 * k, 18 * k);
+      } else {
+        pdf.setFontSize(8); pdf.setTextColor(140);
+        pdf.text('Page ' + (i + 1) + ' of ' + slices.length, 794 * k / 2, (PH - 18) * k, { align: 'center' });
+      }
     });
     return pdf.output('blob');
   } finally { host.remove(); }
@@ -3460,16 +3622,27 @@ document.addEventListener('click', function (e) {
       }
       renderEditor();
       break;
-    case 'f-boss-t': F.boss.t = v; pickIn(el, a); $('#bHint').textContent = BOSS_T[v] ? BOSS_T[v][2] : ''; break;
-    case 'f-boss-reply': openBossReply({ row: F.ref.row, task: F.ref.task, date: F.ref.date, boss: F.boss }); break;
+    case 'f-boss-t': {
+      readForm(); F.boss.t = v;
+      const sh = $('#sheet'), top = sh.scrollTop;
+      renderEditor(); sh.scrollTop = top;
+      break;
+    }
+    case 'f-boss-reply':
+      readForm();
+      openBossReply({ row: F.ref.row, task: F.ref.task, date: F.ref.date, boss: { t: F.boss.t, ask: F.boss.ask, amt: Number(F.boss.amt) || 0, opts: optList(F.boss.opts) } });
+      break;
     case 'f-boss-again': sendBossReply(F.ref, '', el); break;
-    case 'bq-open':  { const x = bossItem(row); if (x) openBossReply({ row: x.row, task: x.task, date: x.date, boss: { t: x.type, ask: x.ask } }); break; }
-    case 'boss-r':   sendBossReply(S.replyFor, v, el); break;
+    case 'bq-open':  { const x = bossItem(row); if (x) openBossReply({ row: x.row, task: x.task, date: x.date, boss: { t: x.type, ask: x.ask, amt: x.amt, opts: x.opts } }); break; }
+    case 'boss-pick': readReplyDraft(); S.replyPick = v; drawBossReply(); break;
+    case 'boss-opt':  readReplyDraft(); S.replyDraft.opt = Number(v); drawBossReply(); break;
+    case 'boss-mode': readReplyDraft(); S.replyDraft.mode = S.replyDraft.mode === v ? '' : v; drawBossReply(); break;
+    case 'boss-save': saveBossReply(el); break;
     case 'boss-name-save': saveBossName(el); break;
     case 'f-copy':
       readForm();
       F.ref = null; F.status = 'To Do'; F.source = 'app'; F.rollover = 0; F.onCalendar = false;
-      if (F.boss) F.boss = { t: F.boss.t, ask: F.boss.ask, by: F.boss.by };
+      if (F.boss) F.boss = { t: F.boss.t, ask: F.boss.ask, by: F.boss.by, amt: F.boss.amt, opts: F.boss.opts };
       renderEditor(); toast('কপি — তারিখ বদলে "যোগ করুন" চাপুন');
       break;
 
