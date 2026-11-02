@@ -838,6 +838,83 @@ function callServer(fn, args) {
     .rp-sign div { width: 44%; }
   }
 
+  /* ---- বসের কাছে: ফর্মের অংশ, রিপোর্ট ট্যাবের "বসের টেবিলে", উত্তর লেখা ---- */
+  .boss-box {
+    margin-top: 10px; padding: 12px; border-radius: 12px;
+    background: color-mix(in srgb, #BE185D 6%, var(--surface)); border: 1px solid color-mix(in srgb, #BE185D 22%, transparent);
+  }
+  .boss-box > .fld:first-child { margin-top: 0; }
+  .boss-st { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 12px; font-size: 12.5px; font-weight: 600; color: var(--ink-2); }
+  .boss-st .btn { margin-left: auto; }
+  .bq-stats { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 6px; }
+  .bq-stats span { font-size: 11.5px; font-weight: 700; padding: 4px 10px; border-radius: 999px; background: var(--surface-2); color: var(--ink-2); }
+  .bq-stats span.hot { background: color-mix(in srgb, var(--danger) 12%, transparent); color: var(--danger); }
+  .bq {
+    display: flex; gap: 10px; align-items: flex-start; width: 100%; text-align: left; border: 0; background: none; color: inherit;
+    padding: 10px 0; border-top: 1px solid var(--line); cursor: pointer; font: inherit;
+  }
+  .bq-stats + .bq { border-top: 0; }
+  .bq .bar { width: 4px; align-self: stretch; border-radius: 4px; background: #BE185D; flex: none; }
+  .bq.hot .bar { background: var(--danger); }
+  .bq .bx { flex: 1; min-width: 0; }
+  .bq b { display: block; font-size: 13.5px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bq small { display: block; font-size: 12px; color: var(--ink-2); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bq .tags { margin-top: 5px; }
+  .bq .go { flex: none; align-self: center; font-size: 12px; font-weight: 700; color: #BE185D; display: flex; align-items: center; gap: 2px; }
+  @media (prefers-color-scheme: dark) { .bq .go { color: #F472B6; } }
+  .bq-more { font-size: 12px; color: var(--ink-3); text-align: center; padding: 6px 0 2px; }
+  .boss-open { width: 100%; margin-top: 10px; background: #BE185D; }
+  .bopt-ask { background: var(--surface-2); border-radius: 12px; padding: 10px 12px; font-size: 13px; }
+  .bopt-ask b { display: block; font-size: 14px; }
+  .bopt-ask span { display: block; color: var(--ink-2); margin-top: 3px; }
+  .bopts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; }
+  .bopt {
+    border: 0; border-radius: 12px; padding: 13px 8px; font: inherit; font-weight: 800; font-size: 13.5px;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    background: color-mix(in srgb, var(--c) 13%, transparent); color: var(--c); transition: transform .12s;
+  }
+  @media (prefers-color-scheme: dark) { .bopt { color: color-mix(in srgb, var(--c) 60%, white); } }
+  .bopt:active { transform: scale(.97); }
+  .bopt:disabled { opacity: .5; }
+
+  /* বসের রিপোর্ট — অফিসের মেমোর ধাঁচ; বস কাগজেই টিক দিয়ে সিদ্ধান্ত লেখেন */
+  .rp-memo { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid #999; margin-bottom: 10px; }
+  .rp-memo div { display: flex; gap: 8px; padding: 5px 8px; border-bottom: 1px solid #ccc; font-size: 11.5px; }
+  .rp-memo div:nth-child(odd) { border-right: 1px solid #ccc; }
+  .rp-memo div.full { grid-column: 1 / -1; border-right: 0; border-bottom: 0; }
+  .rp-memo span { width: 52px; flex: none; color: #444; text-transform: uppercase; font-size: 9.5px; letter-spacing: .08em; padding-top: 2px; }
+  .rp-intro { font-size: 11.5px; margin: 0 0 12px; line-height: 1.55; }
+  .rp .ty { display: block; font-size: 8.5px; letter-spacing: .12em; text-transform: uppercase; color: #555; font-weight: bold; }
+  .rp .urg { display: inline-block; font-size: 8px; letter-spacing: .1em; font-weight: bold; border: 1px solid #000; padding: 0 4px; margin-left: 6px; vertical-align: 1px; }
+  .rp .rq { margin-top: 3px; }
+  .rp .rq i { font-style: normal; color: #444; }
+  .rp .sm { display: block; font-size: 10px; color: #555; margin-top: 2px; }
+  .rp .sm.late { color: #000; font-weight: bold; }
+  .rp td.dec { font-size: 10.5px; line-height: 1.95; white-space: nowrap; }
+  .rp .bx { display: inline-block; width: 10px; height: 10px; border: 1px solid #000; vertical-align: -1px; margin-right: 5px; position: relative; }
+  .rp .rmk { border-bottom: 1px dotted #777; height: 18px; }
+  .rp tr.hot td:first-child { box-shadow: inset 3px 0 0 #000; font-weight: bold; }
+  @media (max-width: 520px) {
+    .rp-memo { grid-template-columns: 1fr; }
+    .rp-memo div:nth-child(odd) { border-right: 0; }
+    .rp td.dec { white-space: normal; font-size: 9.5px; line-height: 1.6; }
+    .rp.fixed td.dec { white-space: nowrap; font-size: 10.5px; line-height: 1.95; }
+    /* PDF ফোনেও A4-এর মাপে (794px) আঁকা হয় — ছোট পর্দার নিয়ম সেখানে খাটবে না */
+    .rp.fixed { font-size: 12.5px; }
+    .rp.fixed .rp-head { padding: 0 64px; min-height: 64px; }
+    .rp.fixed .rp-logo { width: 58px; height: 58px; }
+    .rp.fixed .rp-org { font-size: 19px; }
+    .rp.fixed .rp-title { font-size: 12.5px; }
+    .rp.fixed .rp-stats b { font-size: 17px; }
+    .rp.fixed table { font-size: 11px; }
+    .rp.fixed th, .rp.fixed td { padding: 4px 6px; }
+    .rp.fixed .hide-s { display: table-cell; }
+    .rp.fixed .rp-sign div { width: 200px; }
+    .rp.fixed .rp-memo { grid-template-columns: 1fr 1fr; }
+    .rp.fixed .rp-memo div:nth-child(odd) { border-right: 1px solid #ccc; }
+    .rp.fixed .rp-memo div.full { border-right: 0; }
+  }
+
   #tpPrint { display: none; }
   @media print {
     body > *:not(#tpPrint) { display: none !important; }
@@ -1194,6 +1271,27 @@ function normSta(s) {
   return STA_ALIAS[s.toLowerCase()] || s;
 }
 function staLabel(s) { return LBL_LANG === 'bn' ? (STA_BN[s] || s) : s; }
+
+/* বসের কাছে — যে কাজ বসের অনুমোদন/সম্মতি/সিদ্ধান্ত ছাড়া এগোয় না (সার্ভারের CONFIG.BOSS_TYPES / BOSS_REPLIES)।
+ * ক্যাটাগরি নয়, আলাদা চিহ্ন — পেমেন্টের কাজে অনুমোদন লাগলেও সেটা Payment-ই থাকে। রিপোর্টে সবসময় English। */
+const BOSS_C = '#BE185D';
+const BOSS_T = {   // [বাংলা, English, ব্যাখ্যা, কাগজে বসের টিকের ঘর]
+  Approval:    ['অনুমোদন', 'Approval', 'কাজ, খরচ বা প্রস্তাবের অনুমোদন', ['Approved', 'Not approved', 'Discuss']],
+  Permission:  ['অনুমতি / সম্মতি', 'Permission', 'এগোনোর আগে বসের সম্মতি দরকার', ['Permitted', 'Not permitted', 'Discuss']],
+  Decision:    ['সিদ্ধান্ত', 'Decision', 'কয়েকটা পথের একটা বেছে দিতে হবে', ['Decided (see remarks)', 'Discuss']],
+  Signature:   ['স্বাক্ষর', 'Signature', 'কাগজে বসের সই লাগবে', ['Signed', 'Not signed', 'Discuss']],
+  Fund:        ['অর্থ ছাড়', 'Fund Release', 'টাকা ছাড় বা পেমেন্টের অনুমোদন', ['Approved', 'Not approved', 'Discuss']],
+  Information: ['তথ্য / আপডেট', 'Information', 'বসের কাছ থেকে তথ্য বা আপডেট দরকার', ['Information given', 'Discuss']],
+  Discussion:  ['আলোচনা', 'Discussion', 'বসের সাথে বসে ঠিক করতে হবে', ['Discussed', 'Later']]
+};
+const BOSS_R = {   // [বাংলা, English, রং, আইকন]
+  Approved: ['অনুমোদিত', 'Approved', '#059669', 'check'],
+  Rejected: ['নাকচ', 'Not Approved', '#E11D48', 'x'],
+  Revise:   ['সংশোধন চাই', 'Revise & Resubmit', '#D97706', 'undo'],
+  Noted:    ['নিষ্পত্তি হয়েছে', 'Resolved', '#2563EB', 'checksq']
+};
+function bossT(t) { const x = BOSS_T[t]; return x ? x[LBL_LANG === 'bn' ? 0 : 1] : t; }
+function bossR(r) { const x = BOSS_R[r]; return x ? x[LBL_LANG === 'bn' ? 0 : 1] : r; }
 const SRC = { 'app': 'অ্যাপ', 'quick-add': 'Quick add', 'entry': 'Entry শিট', 'google-tasks': 'Google Tasks', '': 'শিট' };
 
 const TOOLS = {
@@ -1254,7 +1352,8 @@ const ICONS = {
   bell: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
   download: '<path d="M12 3v12M7 10l5 5 5-5"/><path d="M4 21h16"/>',
   share: '<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/>',
-  file: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/>'
+  file: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/>',
+  pen: '<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/>'
 };
 
 function ic(name, size) {
@@ -1749,6 +1848,11 @@ function card(i, opts) {
       (free ? ' data-act="card-sta" data-row="' + i.row + '"' : '') + '>' + esc(staLabel(i.status)) +
       (free ? ' ▾' : '') + '</' + (free ? 'button' : 'span') + '>';
   }
+  if (i.boss && !i.done) {
+    const r = BOSS_R[i.boss.r];
+    tags += r ? '<span class="tag" style="--t:' + r[2] + '">' + ic(r[3], 11) + esc(bossR(i.boss.r)) + '</span>'
+              : '<span class="tag" style="--t:' + BOSS_C + '">' + ic('pen', 11) + (LBL_LANG === 'bn' ? 'বস: ' : 'Boss: ') + esc(bossT(i.boss.t)) + '</span>';
+  }
   if (i.rollover > 0 && !i.done) {
     tags += '<span class="tag" style="--t:' + (stuck ? 'var(--danger)' : '#64748B') + '">' + ic('flag', 11) + i.rollover + '×</span>';
   }
@@ -1800,11 +1904,11 @@ function refOf(i) { return { row: i.row, task: i.task, date: i.date }; }
 
 function openEditor(item, preset) {
   if (item) {
-    F = Object.assign({}, item, { ref: refOf(item) });
+    F = Object.assign({}, item, { ref: refOf(item), boss: item.boss ? Object.assign({}, item.boss) : null });
   } else {
     F = Object.assign({
       ref: null, task: '', category: 'Other', priority: 'Should', status: 'To Do',
-      date: S.mode === 'day' ? S.date : todayKey(), start: '', end: '', note: '', guest: ''
+      date: S.mode === 'day' ? S.date : todayKey(), start: '', end: '', note: '', guest: '', boss: null
     }, preset || {});
     F.catAuto = true;   // নাম লিখতে লিখতে ক্যাটাগরি নিজে বসে — নিজে বাছলে (f-cat) বন্ধ
   }
@@ -1860,6 +1964,7 @@ function renderEditor() {
       STATUS_LIST.map(function (s) {
         return '<button class="' + (F.status === s ? 'on' : '') + '" style="--c:' + STA[s] + '" data-act="f-sta" data-v="' + esc(s) + '">' + esc(staLabel(s)) + '</button>';
       }).join('') + '</div><div class="hint" id="sHint">' + esc(STA_HINT[F.status] || '') + '</div></div>' +
+    bossFields() +
     '<div class="fld"><div class="lbl">নোট</div><textarea id="fNote" class="inp" rows="2" placeholder="নোট — যেমন কার উত্তরের অপেক্ষা (ঐচ্ছিক)">' + esc(F.note) + '</textarea></div>' +
     '<div class="fld"><div class="lbl">গেস্ট ইমেইল</div>' +
       '<input id="fGuest" class="inp" type="text" inputmode="email" autocomplete="off" placeholder="name@gmail.com, …" value="' + esc(F.guest) + '">' +
@@ -1878,6 +1983,65 @@ function readForm() {
   F.task = $('#fTask').value; F.date = $('#fDate').value || todayKey();
   F.start = $('#fStart').value; F.end = $('#fEnd').value;
   F.note = $('#fNote').value; F.guest = $('#fGuest').value;
+  if (F.boss && $('#fBossAsk')) { F.boss.ask = $('#fBossAsk').value; F.boss.by = $('#fBossBy').value; }
+}
+
+/* ফর্মের "বসের কাছে" অংশ — চালু করলে রিপোর্ট ট্যাবের "বসের টেবিলে" আর বসের রিপোর্টে যায় */
+function bossFields() {
+  const b = F.boss;
+  let h = '<div class="fld"><div class="swrow"><div><div class="lbl" style="margin:0">বসের কাছে</div>' +
+    '<div class="hint" style="margin:0">বসের অনুমোদন / সম্মতি / সিদ্ধান্ত ছাড়া এগোবে না — বসের রিপোর্টে যাবে</div></div>' +
+    '<button class="sw' + (b ? ' on' : '') + '" data-act="f-boss" aria-label="বসের কাছে — চালু/বন্ধ"></button></div>';
+  if (!b) return h + '</div>';
+  h += '<div class="boss-box">' +
+    '<div class="fld"><div class="lbl">কী দরকার</div><div class="chips">' +
+      (S.boot.bossTypes || Object.keys(BOSS_T)).map(function (t) {
+        return '<button class="chip' + (b.t === t ? ' on' : '') + '" style="--c:' + BOSS_C + '" data-act="f-boss-t" data-v="' + esc(t) + '">' + esc(bossT(t)) + '</button>';
+      }).join('') + '</div><div class="hint" id="bHint">' + esc((BOSS_T[b.t] || [])[2] || '') + '</div></div>' +
+    '<div class="fld"><div class="lbl">বসের কাছে ঠিক কী চান</div>' +
+      '<textarea id="fBossAsk" class="inp" rows="2" maxlength="300" placeholder="যেমন: রকমারির চুক্তির খসড়া অনুমোদন — ১২% কমিশনে">' + esc(b.ask || '') + '</textarea>' +
+      '<div class="hint">রিপোর্টে "Request" হিসেবে এটাই যায় — এক লাইনে পরিষ্কার করে লিখুন।</div></div>' +
+    '<div class="fld"><div class="lbl">কবের মধ্যে দরকার <span class="hint">(ঐচ্ছিক)</span></div>' +
+      '<div class="tin"><input type="date" id="fBossBy" class="inp" value="' + esc(b.by || '') + '">' +
+      '<button class="clr" data-act="f-clear" data-v="fBossBy" aria-label="মুছুন">' + ic('x', 13) + '</button></div></div>';
+  if (F.ref && b.since) {
+    const r = BOSS_R[b.r];
+    h += '<div class="boss-st">' + (r
+      ? '<span class="tag" style="--t:' + r[2] + '">' + ic(r[3], 11) + esc(r[0]) + '</span><span>' + esc(shortDate(b.on)) + (b.rn ? ' — ' + esc(b.rn) : '') + '</span>' +
+        '<button class="btn ghost sm" data-act="f-boss-again">আবার পাঠান</button>'
+      : '<span>' + esc(shortDate(b.since)) + ' থেকে বসের কাছে</span><button class="btn ghost sm" data-act="f-boss-reply">বসের উত্তর লিখুন</button>') + '</div>';
+  }
+  return h + '</div></div>';
+}
+
+/* ---------- বসের উত্তর ----------
+ * বস কাগজে/মুখে সিদ্ধান্ত দিলে এখানে লেখা — কাজটা অপেক্ষার তালিকা থেকে সরে রিপোর্টের "Decisions Received"-এ যায় */
+function openBossReply(x) {
+  S.replyFor = x;
+  const b = x.boss || {};
+  $('#sheet').innerHTML = '<div class="grab"></div><div class="sh-head"><h2>বসের উত্তর</h2>' +
+    '<button class="x" data-act="close" aria-label="বন্ধ">' + ic('x') + '</button></div>' +
+    '<div class="bopt-ask"><b>' + esc(x.task) + '</b>' + (b.ask ? '<span>' + esc((BOSS_T[b.t] || [b.t])[0]) + ' — ' + esc(b.ask) + '</span>' : '') + '</div>' +
+    '<div class="fld"><div class="lbl">বসের মন্তব্য / শর্ত <span class="hint">(ঐচ্ছিক)</span></div>' +
+      '<textarea id="fBossNote" class="inp" rows="2" maxlength="300" placeholder="যেমন: ১০% কমিশনে রাজি হলে চূড়ান্ত করুন"></textarea></div>' +
+    '<div class="bopts">' + (S.boot.bossReplies || Object.keys(BOSS_R)).map(function (r) {
+      return '<button class="bopt" style="--c:' + BOSS_R[r][2] + '" data-act="boss-r" data-v="' + r + '">' + ic(BOSS_R[r][3], 16) + esc(BOSS_R[r][0]) + '</button>';
+    }).join('') + '</div>' +
+    '<div class="hint" style="margin-top:12px">উত্তর লিখলে কাজটা বসের অপেক্ষার তালিকা থেকে সরে রিপোর্টের "Decisions Received"-এ যায়; "অপেক্ষায়" থাকা কাজ আবার "বাকি"-তে ফেরে।</div>';
+  openSheet();
+}
+async function sendBossReply(ref, reply, btn) {
+  if (!ref) return;
+  const note = reply ? (($('#fBossNote') || {}).value || '') : '';
+  btn.disabled = true; btn.classList.add('loading');
+  try {
+    await api('apiBossReply', { row: ref.row, task: ref.task, date: ref.date }, reply, note);
+    S.replyFor = null; closeSheet();
+    toast(reply ? 'বসের উত্তর লেখা হয়েছে — ' + BOSS_R[reply][0] + ' ✓' : 'আবার বসের কাছে পাঠানো হলো');
+    S.bossQ = null;
+    if (S.tab === 'insights') fillInsights();
+    loadList(true);
+  } catch (e) { btn.disabled = false; btn.classList.remove('loading'); toast(e.message); }
 }
 
 function pickIn(el, attrAct) {
@@ -1893,17 +2057,19 @@ function formError(msg) {
 async function saveTask(btn) {
   readForm();
   if (!F.task.trim()) return formError('কাজের নাম লিখুন।');
+  if (F.boss && !F.boss.ask.trim()) return formError('বসের কাছে ঠিক কী চান লিখুন — রিপোর্টে এটাই যায়।');
   btn.classList.add('loading'); formError('');
   try {
     const it = await api('apiSaveTask', {
       ref: F.ref, task: F.task, category: F.category, priority: F.priority, status: F.status,
-      date: F.date, start: F.start, end: F.end, note: F.note, guest: F.guest
+      date: F.date, start: F.start, end: F.end, note: F.note, guest: F.guest,
+      boss: F.boss ? { t: F.boss.t, ask: F.boss.ask, by: F.boss.by } : null
     });
     const wasNew = !F.ref;
     closeSheet();
     const where = (S.mode === 'day' && it.date !== S.date) ? ' — ' + relLabel(it.date) + ', ' + shortDate(it.date) : '';
     toast((wasNew ? 'এন্ট্রি যোগ হয়েছে' : 'সেভ হয়েছে ✓') + where);
-    S.insights = null;
+    S.insights = null; S.bossQ = null;
     loadList(true);
   } catch (e) {
     btn.classList.remove('loading');
@@ -2469,6 +2635,7 @@ function fillInsights() {
       '<div class="tile" style="--c:#6366F1"><div class="k">সাপ্তাহিক</div><div class="v">' + pct(I.week) + '%</div><div class="s">' + I.week.d + '/' + I.week.t + ' সম্পন্ন</div></div>' +
       '<div class="tile" style="--c:#059669"><div class="k">মাসিক</div><div class="v">' + pct(I.month) + '%</div><div class="s">' + I.month.d + '/' + I.month.t + ' সম্পন্ন</div></div>' +
     '</div>' +
+    bossPanel() +
     '<div class="panel"><h3>' + ic('chart') + ' প্রতিদিনের অগ্রগতি<small>শেষ ১৪ কর্মদিবস</small></h3>' + trendChart(I.trend) + '</div>' +
     '<div class="panel"><h3>' + ic('flag') + ' প্রায়োরিটি অনুযায়ী<small>৩০ দিন</small></h3><div class="bars">' +
       I.priority.map(function (p) { return bar(p.name, p, PRI[p.name] || '#64748B'); }).join('') + '</div></div>' +
@@ -2478,9 +2645,62 @@ function fillInsights() {
     (I.stuck.length ? '<div class="panel"><h3>' + ic('alert') + ' বারবার পিছিয়ে যাচ্ছে<small>আজ করুন বা বাদ দিন</small></h3>' + I.stuck.map(miniRow).join('') + '</div>' : '') +
     '<div class="panel"><h3>' + ic('file') + ' রিপোর্ট (PDF)<small>অ্যাপেই দেখুন · ডাউনলোড · শেয়ার · প্রিন্ট</small></h3>' +
       repDatePicker() +
-      '<div class="rp-btns">' + Object.keys(REPORTS).map(repBtn).join('') + '</div>' +
+      '<div class="rp-btns">' + Object.keys(REPORTS).filter(function (k) { return k !== 'boss'; }).map(repBtn).join('') + '</div>' +
       '<div class="rp-sub">ইমেইল / TELEGRAM-এ পাঠানো</div>' +
       '<div class="tools">' + toolBtn('eod') + toolBtn('weekly') + toolBtn('sheetReport') + '</div></div>';
+}
+
+/* ---------- বসের টেবিলে — আজ পর্যন্ত বসের কাছে যা ঝুলে আছে (apiReport 'boss') ---------- */
+async function loadBossQ() {
+  if (S.loadingBoss) return;
+  S.loadingBoss = true;
+  try { S.bossQ = await api('apiReport', 'boss', todayKey()); }
+  catch (e) { S.bossQ = { error: e.message }; }
+  S.loadingBoss = false;
+  if (S.tab === 'insights' && S.insights) fillInsights();
+}
+function bossItem(row) {
+  return ((S.bossQ && S.bossQ.pending) || []).filter(function (x) { return x.row === Number(row); })[0] || null;
+}
+function bossPanel() {
+  const Q = S.bossQ;
+  let body;
+  if (!Q) { loadBossQ(); body = '<div class="sk" style="height:64px"></div>'; }
+  else if (Q.error) body = '<div class="none-day">লোড ব্যর্থ: ' + esc(Q.error) + '</div>';
+  else if (!Q.pending.length) body = '<div class="none-day">বসের কাছে এখন কিছু ঝুলে নেই।' +
+    (Q.decided.length ? ' আজ ' + bnNum(Q.decided.length) + 'টা সিদ্ধান্ত এসেছে।' : '') +
+    ' কাজের ফর্মে "বসের কাছে" চালু করলে এখানে আসবে।</div>';
+  else body = '<div class="bq-stats"><span>' + bnNum(Q.pending.length) + 'টা অপেক্ষায়</span>' +
+      (Q.urgent ? '<span class="hot">' + bnNum(Q.urgent) + 'টা জরুরি</span>' : '') +
+      (Q.aged ? '<span>' + bnNum(Q.aged) + 'টা ৩+ দিন ধরে</span>' : '') +
+      (Q.decided.length ? '<span>আজ ' + bnNum(Q.decided.length) + 'টা সিদ্ধান্ত</span>' : '') + '</div>' +
+    Q.pending.slice(0, 8).map(bqRow).join('') +
+    (Q.pending.length > 8 ? '<div class="bq-more">আরও ' + bnNum(Q.pending.length - 8) + 'টা — রিপোর্টে সব আছে</div>' : '');
+  return '<div class="panel"><h3>' + ic('pen') + ' বসের টেবিলে<small>অনুমোদন · সম্মতি · সিদ্ধান্ত</small></h3>' + body +
+    '<button class="btn primary boss-open" data-act="report" data-kind="boss">' + ic('file', 16) + ' বসের রিপোর্ট — দেখুন · PDF · প্রিন্ট</button>' +
+    '<div class="fld"><div class="lbl">রিপোর্ট যাঁর টেবিলে যাবে</div>' +
+      '<div class="prow" style="margin:0"><input id="bossName" class="inp" maxlength="80" autocomplete="off" placeholder="যেমন: Managing Director" value="' + esc(S.boot.bossName || '') + '">' +
+      '<button class="btn ghost" data-act="boss-name-save">সেভ</button></div>' +
+      '<div class="hint">রিপোর্টের "To:" লাইনে বসে। আগের দিনের রিপোর্ট: নিচের তারিখ বদলে এই বোতাম।</div></div></div>';
+}
+function bqRow(x) {
+  const hot = x.late || x.due || x.priority === 'Must';
+  return '<button class="bq' + (hot ? ' hot' : '') + '" data-act="bq-open" data-row="' + x.row + '"><span class="bar"></span><span class="bx">' +
+    '<b>' + esc(x.task) + '</b>' + (x.ask ? '<small>' + esc(x.ask) + '</small>' : '') +
+    '<span class="tags"><span class="tag" style="--t:' + BOSS_C + '">' + esc(bossT(x.type)) + '</span>' +
+      '<span class="tag plain">' + ic('clock', 11) + (x.days ? bnNum(x.days) + ' দিন ধরে' : 'আজ থেকে') + '</span>' +
+      (x.by ? '<span class="tag" style="--t:' + (x.late ? 'var(--danger)' : x.due ? 'var(--warn)' : '#64748B') + '">' +
+        (x.late ? 'সময় পেরিয়েছে' : x.due ? 'আজই দরকার' : esc(shortDate(x.by)) + '-এর মধ্যে') + '</span>' : '') +
+    '</span></span><span class="go">উত্তর' + ic('chevR', 14) + '</span></button>';
+}
+async function saveBossName(btn) {
+  btn.classList.add('loading');
+  try {
+    S.boot.bossName = await api('apiSetBossName', $('#bossName').value.trim());
+    $('#bossName').value = S.boot.bossName;
+    toast('সেভ হয়েছে ✅');
+  } catch (e) { toast(e.message); }
+  btn.classList.remove('loading');
 }
 
 /* ---------- আরও: ছুটি, টুলস, Telegram ---------- */
@@ -2540,7 +2760,7 @@ function fillMore() {
       (AUTH ? '<button class="btn ghost sm" data-act="logout">লগআউট</button>' : '') + '</div></div>' +
     '<div class="panel"><a class="link" href="' + esc(S.boot.sheetUrl) + '" target="_blank" rel="noopener">' +
       ic('sheet') + '<span>Google Sheet খুলুন (ব্যাকএন্ড)</span>' + ic('ext', 16) + '</a></div>' +
-    '<div class="foot">Smart To-Do · v9.7</div>';
+    '<div class="foot">Smart To-Do · v9.8</div>';
 }
 
 /* ---------- নিরাপত্তা (শুধু মালিক দেখেন) ----------
@@ -2707,7 +2927,8 @@ const REPORTS = {
   daily:   ['Daily Work Report', 'দিনের সব কাজের তালিকা', 'file', '#4F46E5'],
   eod:     ['End of Day Report', 'বাকি কাজ, সংঘর্ষ, পরের দিন', 'mail', '#D97706'],
   weekly:  ['Weekly Review', 'শেষ ৭ দিনের হিসাব', 'chart', '#059669'],
-  monthly: ['Monthly Review', 'পুরো মাসের হিসাব', 'calendar', '#DB2777']
+  monthly: ['Monthly Review', 'পুরো মাসের হিসাব', 'calendar', '#DB2777'],
+  boss:    ['Approval & Decision Brief', 'বসের অনুমোদন / সিদ্ধান্ত', 'pen', BOSS_C]
 };
 let RV = null;   // { kind, date, data }
 
@@ -2748,7 +2969,7 @@ function repRange(d) {
   if (d.kind === 'weekly' || d.kind === 'monthly') return enDate(d.from) + ' – ' + enDate(d.to);
   return enDate(d.date, { weekday: 'long' });
 }
-function repFile(d) { return REPORTS[d.kind][0].replace(/ /g, '-') + '_' + (d.from ? d.from + '_to_' + d.to : d.date) + '.pdf'; }
+function repFile(d) { return REPORTS[d.kind][0].replace(/[^A-Za-z0-9]+/g, '-') + '_' + (d.from ? d.from + '_to_' + d.to : d.date) + '.pdf'; }
 
 function openReport(kind, dateKey) {
   if (!REPORTS[kind]) return;
@@ -2812,6 +3033,7 @@ function drawRv() {
 
 /* ---- পাতা ---- */
 function repPage(d) {
+  if (d.kind === 'boss') return bossPage(d);
   const t = REPORTS[d.kind];
   let html = '<div class="rp">' +
     '<div class="rp-head"><img class="rp-logo" src="' + ORG_LOGO + '" alt="">' +
@@ -2861,6 +3083,66 @@ function repPage(d) {
   return html +
     '<div class="rp-sign"><div>Prepared By<small>' + esc(OWNER_NAME) + '</small></div>' +
       '<div>Authorised Signature<small>' + esc(ORG_NAME) + '</small></div></div>' +
+    '<div class="rp-foot">Generated ' + esc(d.generated) + ' · This is a system generated document of ' + esc(ORG_NAME) + '</div>' +
+  '</div>';
+}
+/* ---- বসের রিপোর্ট: মেমো (To/From/Date/Ref/Subject) → অপেক্ষার তালিকা, প্রতিটার পাশে বসের টিকের ঘর
+ *      আর মন্তব্যের লাইন → সেদিন আসা সিদ্ধান্ত → সই ---- */
+function bossEn(t) { return (BOSS_T[t] || [0, t])[1]; }
+function bossPage(d) {
+  const P = d.pending, D = d.decided, n = P.length, isToday = d.date === d.today;
+  const org = ORG_NAME.split(/\s+/).map(function (w) { return w.charAt(0); }).join('').toUpperCase();
+  const dm = function (k) { return enDate(k, { year: undefined }); };
+  let html = '<div class="rp">' +
+    '<div class="rp-head"><img class="rp-logo" src="' + ORG_LOGO + '" alt="">' +
+      '<div class="rp-org">' + esc(ORG_NAME) + '</div>' +
+      '<div class="rp-title">Approval &amp; Decision Brief</div>' +
+      '<div class="rp-meta">For management review &nbsp;·&nbsp; ' + esc(enDate(d.date, { weekday: 'long' })) + '</div></div>' +
+    '<div class="rp-rule"></div>' +
+    '<div class="rp-memo">' +
+      '<div><span>To</span><b>' + esc(d.bossName) + '</b></div>' +
+      '<div><span>Date</span><b>' + esc(enDate(d.date)) + '</b></div>' +
+      '<div><span>From</span><b>' + esc(OWNER_NAME) + '</b></div>' +
+      '<div><span>Ref</span><b>' + esc(org + '/ADB/' + d.date.replace(/-/g, '')) + '</b></div>' +
+      '<div class="full"><span>Subject</span><b>Matters awaiting your approval, consent or decision</b></div></div>' +
+    '<p class="rp-intro">' + (n
+      ? 'The following ' + (n > 1 ? n + ' matters require' : 'matter requires') + ' your approval, consent or decision before ' +
+        (n > 1 ? 'they' : 'it') + ' can proceed. Kindly mark your decision against each item and add remarks where needed.'
+      : 'No matter is awaiting your approval or decision as of ' + esc(enDate(d.date)) + '.') + '</p>' +
+    '<div class="rp-stats">' +
+      '<div><b>' + n + '</b><span>Awaiting Decision</span></div><div><b>' + d.urgent + '</b><span>Urgent</span></div>' +
+      '<div><b>' + d.aged + '</b><span>Pending 3+ Days</span></div><div><b>' + D.length + '</b><span>' + (isToday ? 'Decided Today' : 'Decided') + '</span></div></div>' +
+    '<div class="rp-h">A. Awaiting Your Decision <small>(' + n + ')</small></div>';
+
+  html += n ? '<table><thead><tr><th class="c" style="width:26px">#</th><th>Matter &amp; Request</th>' +
+      '<th style="width:96px">Pending</th><th style="width:124px">Your Decision</th></tr></thead><tbody>' +
+    P.map(function (x, i) {
+      const hot = x.late || x.due || x.priority === 'Must';
+      const boxes = (BOSS_T[x.type] || BOSS_T.Approval)[3];
+      return '<tr' + (hot ? ' class="hot"' : '') + '><td class="c">' + (i + 1) + '</td>' +
+        '<td><span class="ty">' + esc(bossEn(x.type)) + ' · ' + esc(x.category) + '</span><b>' + esc(x.task) + '</b>' +
+          (hot ? '<span class="urg">' + (x.late ? 'OVERDUE' : 'URGENT') + '</span>' : '') +
+          (x.ask ? '<div class="rq"><i>Request:</i> ' + esc(x.ask) + '</div>' : '') +
+          (x.note ? '<span class="sm">Note: ' + esc(x.note) + '</span>' : '') + '</td>' +
+        '<td>' + (x.since ? 'Since ' + esc(dm(x.since)) : '–') +
+          '<span class="sm">' + (x.days ? x.days + (x.days > 1 ? ' days' : ' day') : 'Raised today') + '</span>' +
+          (x.by ? '<span class="sm' + (x.late || x.due ? ' late' : '') + '">Needed by ' + esc(dm(x.by)) + '</span>' : '') + '</td>' +
+        '<td class="dec">' + boxes.map(function (b) { return '<span class="bx"></span>' + esc(b); }).join('<br>') + '<div class="rmk"></div></td></tr>';
+    }).join('') + '</tbody></table>'
+    : '<div class="rp-none">Nothing is pending with you.</div>';
+
+  if (D.length) {
+    html += '<div class="rp-h">B. Decisions Received <small>— recorded ' + (isToday ? 'today' : 'on ' + esc(enDate(d.date))) + ' and being acted upon</small></div>' +
+      '<table><thead><tr><th class="c" style="width:26px">#</th><th>Matter</th><th style="width:112px">Decision</th><th class="hide-s">Remarks</th></tr></thead><tbody>' +
+      D.map(function (x, i) {
+        return '<tr><td class="c">' + (i + 1) + '</td><td><span class="ty">' + esc(bossEn(x.type)) + '</span>' + esc(x.task) + '</td>' +
+          '<td class="ok">' + esc((BOSS_R[x.reply] || [0, x.reply])[1]) + '</td><td class="hide-s">' + esc(x.rn || '—') + '</td></tr>';
+      }).join('') + '</tbody></table>';
+  }
+
+  return html +
+    '<div class="rp-sign"><div>Submitted By<small>' + esc(OWNER_NAME) + '</small></div>' +
+      '<div>Reviewed By<small>' + esc(d.bossName) + '</small></div></div>' +
     '<div class="rp-foot">Generated ' + esc(d.generated) + ' · This is a system generated document of ' + esc(ORG_NAME) + '</div>' +
   '</div>';
 }
@@ -3075,7 +3357,7 @@ async function refresh() {
   try {
     if (S.tab === 'tasks') await loadList(true);
     else if (S.tab === 'routine') { S.templates = null; fillRoutine(); }
-    else if (S.tab === 'insights') { S.insights = null; fillInsights(); }
+    else if (S.tab === 'insights') { S.insights = null; S.bossQ = null; fillInsights(); }
     else { S.holidays = null; fillMore(); }
   } finally {
     setTimeout(function () { S.refreshing = false; renderHero(); }, 400);
@@ -3169,9 +3451,25 @@ document.addEventListener('click', function (e) {
     case 'f-clear': { const inp = document.getElementById(v); if (inp) inp.value = ''; break; }
     case 'f-save': saveTask(el); break;
     case 'f-del':  deleteTask(); break;
+    case 'f-boss':
+      readForm();
+      if (F.boss) { F.bossOff = F.boss; F.boss = null; }
+      else {
+        F.boss = F.bossOff || { t: 'Approval', ask: '', by: '' };
+        if (F.status === 'To Do') F.status = 'Waiting';   // বসের অপেক্ষায় — নিজে এগোনো যাচ্ছে না
+      }
+      renderEditor();
+      break;
+    case 'f-boss-t': F.boss.t = v; pickIn(el, a); $('#bHint').textContent = BOSS_T[v] ? BOSS_T[v][2] : ''; break;
+    case 'f-boss-reply': openBossReply({ row: F.ref.row, task: F.ref.task, date: F.ref.date, boss: F.boss }); break;
+    case 'f-boss-again': sendBossReply(F.ref, '', el); break;
+    case 'bq-open':  { const x = bossItem(row); if (x) openBossReply({ row: x.row, task: x.task, date: x.date, boss: { t: x.type, ask: x.ask } }); break; }
+    case 'boss-r':   sendBossReply(S.replyFor, v, el); break;
+    case 'boss-name-save': saveBossName(el); break;
     case 'f-copy':
       readForm();
       F.ref = null; F.status = 'To Do'; F.source = 'app'; F.rollover = 0; F.onCalendar = false;
+      if (F.boss) F.boss = { t: F.boss.t, ask: F.boss.ask, by: F.boss.by };
       renderEditor(); toast('কপি — তারিখ বদলে "যোগ করুন" চাপুন');
       break;
 
