@@ -2850,7 +2850,10 @@ function bossWaText(d) {
              'সিদ্ধান্ত পাওয়া গেলে সংশ্লিষ্ট কাজগুলো এগিয়ে নেওয়া সম্ভব হবে।', ''];
   P.forEach(function (x, i) {
     const opts = x.opts || [];
-    L.push(N(i + 1) + '. ' + one(x.task) + ' (' + bossT(x.type) + ')' + (x.late || x.due || x.priority === 'Must' ? ' — জরুরি' : ''));
+    // "জরুরি" বন্ধনীর ভেতরে — লাইনের শেষে খোলা থাকলে নিচের অনুরোধের সাথে মিলে এক বাক্য মনে হয়
+    // ("জরুরি Invest করা হবে কিনা")। ধরন কাগজের মতোই বাংলায় (এই ডিভাইসের EN/বাং সুইচ মানে না)
+    L.push(N(i + 1) + '. ' + one(x.task) + ' (' + (BOSS_T[x.type] || [x.type])[0] +
+      (x.late || x.due || x.priority === 'Must' ? ', জরুরি' : '') + ')');
     if (x.ask) L.push(one(x.ask));
     if (x.amt) L.push('চাওয়া অর্থ: ' + taka(x.amt));
     if (opts.length) L.push('বিকল্প: ' + opts.map(function (o, j) { return ABC_BN[j] + ') ' + o; }).join('  '));
@@ -2964,7 +2967,7 @@ function fillMore() {
       (AUTH ? '<button class="btn ghost sm" data-act="logout">লগআউট</button>' : '') + '</div></div>' +
     '<div class="panel"><a class="link" href="' + esc(S.boot.sheetUrl) + '" target="_blank" rel="noopener">' +
       ic('sheet') + '<span>Google Sheet খুলুন (ব্যাকএন্ড)</span>' + ic('ext', 16) + '</a></div>' +
-    '<div class="foot">Smart To-Do · v9.18</div>';
+    '<div class="foot">Smart To-Do · v9.19</div>';
 }
 
 /* ---------- নিরাপত্তা (শুধু মালিক দেখেন) ----------
