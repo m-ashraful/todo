@@ -2825,7 +2825,7 @@ function bossPanel() {
     (Q.pending.length > 8 ? '<div class="bq-more">আরও ' + bnNum(Q.pending.length - 8) + 'টা — রিপোর্টে সব আছে</div>' : '');
   return '<div class="panel"><h3>' + ic('pen') + ' বসের টেবিলে<small>অনুমোদন · সম্মতি · সিদ্ধান্ত</small></h3>' + body +
     '<button class="btn primary boss-open" data-act="report" data-kind="boss">' + ic('file', 16) + ' অনুমোদন ও সিদ্ধান্ত প্রতিবেদন</button>' +
-    (Q && !Q.error && (Q.pending.length || Q.decided.length) ? '<button class="btn boss-wa" data-act="boss-wa">' + ic('wa', 16) + ' WhatsApp-এ পাঠান</button>' : '') +
+    (Q && !Q.error && Q.pending.length ? '<button class="btn boss-wa" data-act="boss-wa">' + ic('wa', 16) + ' WhatsApp-এ পাঠান</button>' : '') +
     '<div class="fld"><div class="lbl">রিপোর্ট যাঁর টেবিলে যাবে</div>' +
       '<div class="prow" style="margin:0"><input id="bossName" class="inp" maxlength="80" autocomplete="off" placeholder="যেমন: Managing Director" value="' + esc(S.boot.bossName || '') + '">' +
       '<button class="btn ghost" data-act="boss-name-save">সেভ</button></div>' +
@@ -2835,46 +2835,29 @@ function bossPanel() {
       '<button class="btn ghost" data-act="boss-wa-save">সেভ</button></div>' +
       '<div class="hint">থাকলে WhatsApp বোতাম সরাসরি বসের চ্যাট খোলে; ফাঁকা রাখলে কাকে পাঠাবেন বাছাই করবেন।</div></div></div>';
 }
-/* ---- WhatsApp-এর জন্য একই প্রতিবেদন লেখা আকারে (*মোটা*, _বাঁকা_ — WhatsApp-এর নিজের নিয়ম)।
- *      ক্রম নম্বর কাগজের মতোই, তাই বস "২ — অনুমোদিত" লিখে উত্তর দিলে অ্যাপে মিলিয়ে বসানো সহজ ---- */
+/* ---- WhatsApp-এর জন্য ছোট বার্তা (*মোটা*, _বাঁকা_ — WhatsApp-এর নিজের নিয়ম)। শুধু যা বসের সিদ্ধান্তের জন্য লাগে:
+ *      ক্রম নম্বর (কাগজের মতোই), বিষয়, ধরন, অনুরোধ, অঙ্ক, বিকল্প, শেষ তারিখ। প্রাপক/প্রেরক/নিয়ম/প্রাপ্ত সিদ্ধান্ত নয় —
+ *      বার্তা সরাসরি বসের চ্যাটে যায়, আর বাকিটা কাগজের প্রতিবেদনে আছে ---- */
 function bossWaText(d) {
-  const P = d.pending, D = d.decided, N = bnNum, L = [];
-  const bd = function (k) { return fmt(k, { day: 'numeric', month: 'long', year: 'numeric' }); };
-  const plain = function (s) { return s.replace(/\s*…/g, '').replace(/[:\s৳]+$/, ''); };   // "আংশিক ছাড়: ৳ …" → "আংশিক ছাড়"
-  L.push('*' + ORG_NAME + '*', '*অনুমোদন ও সিদ্ধান্ত প্রতিবেদন*', 'তারিখ: ' + bd(d.date), 'প্রাপক: ' + d.bossName, '');
-  if (P.length) {
-    L.push('নিম্নবর্ণিত ' + N(P.length) + 'টি বিষয় আপনার সদয় অনুমোদন, সম্মতি বা সিদ্ধান্তের জন্য উপস্থাপন করা হলো।', '');
-    P.forEach(function (x, i) {
-      const T = BOSS_T[x.type] || BOSS_T.Approval, opts = x.opts || [];
-      L.push('*' + N(i + 1) + '. ' + x.task + '*' + (x.late || x.due || x.priority === 'Must' ? ' — _জরুরি_' : ''));
-      L.push('ধরন: ' + T[0] + ' · ' + (CAT_EN[x.category] || x.category));
-      if (x.ask) L.push('অনুরোধ: ' + x.ask);
-      if (x.amt) L.push('চাওয়া অর্থ: *' + taka(x.amt) + '*');
-      if (opts.length) L.push('প্রস্তাবিত বিকল্প: ' + opts.map(function (o, j) { return ABC_BN[j] + ') ' + o; }).join('  '));
-      if (x.by) L.push('শেষ তারিখ: ' + longDateShort(x.by));
-      L.push('সিদ্ধান্ত: ' + (x.type === 'Decision' ? '_অনুগ্রহ করে লিখে জানান_'
-        : '_' + T[3].map(plain).join(' / ') + '_'), '');
-    });
-    // উদাহরণ এই বার্তার প্রথম দুটো বিষয় থেকেই — বসের কাছে মিলিয়ে বোঝা সহজ
-    L.push('*উত্তর দেওয়ার নিয়ম:* ক্রম নম্বর লিখে পাশে সিদ্ধান্ত লিখুন। যেমন:');
-    P.slice(0, 2).forEach(function (x, i) {
-      L.push(N(i + 1) + ' — ' + (x.type === 'Decision' ? ((x.opts || []).length ? 'বিকল্প ক' : 'আপনার সিদ্ধান্ত')
-        : plain((BOSS_T[x.type] || BOSS_T.Approval)[3][0])));
-    });
+  const P = d.pending, N = bnNum;
+  const L = ['*অনুমোদন ও সিদ্ধান্ত প্রতিবেদন*', fmt(d.date, { day: 'numeric', month: 'long', year: 'numeric' }), '',
+             'নিম্নবর্ণিত ' + N(P.length) + 'টি বিষয়ে আপনার সদয় সিদ্ধান্ত প্রয়োজন:', ''];
+  P.forEach(function (x, i) {
+    const opts = x.opts || [];
+    L.push('*' + N(i + 1) + '. ' + x.task + '* (' + bossT(x.type) + ')' + (x.late || x.due || x.priority === 'Must' ? ' — _জরুরি_' : ''));
+    if (x.ask) L.push(x.ask);
+    if (x.amt) L.push('চাওয়া অর্থ: *' + taka(x.amt) + '*');
+    if (opts.length) L.push('বিকল্প: ' + opts.map(function (o, j) { return ABC_BN[j] + ') ' + o; }).join('  '));
+    if (x.by) L.push('শেষ তারিখ: ' + longDateShort(x.by));
     L.push('');
-  } else L.push('আজ পর্যন্ত আপনার সিদ্ধান্তের জন্য কোনো বিষয় উপস্থাপিত নেই।', '');
-  if (D.length) {
-    L.push('*প্রাপ্ত সিদ্ধান্ত* (' + (d.date === d.today ? 'আজ' : bd(d.date)) + ')');
-    D.forEach(function (x, i) { L.push(N(i + 1) + '. ' + x.task + ' — ' + bossRText(x) + (x.rn ? ' (' + x.rn + ')' : '')); });
-    L.push('');
-  }
-  L.push('— ' + OWNER_NAME);
-  return L.join('\n');
+  });
+  return L.join('\n').trim();
 }
 // লেখাটা কপি করে WhatsApp খোলে — বসের নম্বর থাকলে সরাসরি তাঁর চ্যাট, নইলে কাকে পাঠাবেন সেখানে বাছাই।
 // খোলা না গেলে কপি করা লেখা বসিয়ে দিলেই হয়
 async function sendBossWa(d) {
   if (!d) return;
+  if (!d.pending || !d.pending.length) return toast('এই দিনে বসের সিদ্ধান্তের জন্য কিছু নেই — পাঠানোর দরকার নেই');
   const text = bossWaText(d);
   // কপি শুরু করে সঙ্গে সঙ্গে খোলা — আগে await করলে কিছু ব্রাউজার নতুন জানালা আটকে দেয়
   let copy = null;
@@ -2975,7 +2958,7 @@ function fillMore() {
       (AUTH ? '<button class="btn ghost sm" data-act="logout">লগআউট</button>' : '') + '</div></div>' +
     '<div class="panel"><a class="link" href="' + esc(S.boot.sheetUrl) + '" target="_blank" rel="noopener">' +
       ic('sheet') + '<span>Google Sheet খুলুন (ব্যাকএন্ড)</span>' + ic('ext', 16) + '</a></div>' +
-    '<div class="foot">Smart To-Do · v9.15</div>';
+    '<div class="foot">Smart To-Do · v9.16</div>';
 }
 
 /* ---------- নিরাপত্তা (শুধু মালিক দেখেন) ----------
